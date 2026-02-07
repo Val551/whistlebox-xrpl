@@ -91,9 +91,31 @@ export const listEscrows = () => {
     .all() as EscrowRow[];
 };
 
+// Finds an existing donation by its client-supplied paymentTx for idempotency checks.
+export const findDonationByPaymentTx = (paymentTx: string) => {
+  const db = getDb();
+  const donation = db
+    .prepare("SELECT * FROM donations WHERE paymentTx = ?")
+    .get(paymentTx) as DonationRow | undefined;
+
+  if (!donation) {
+    return null;
+  }
+
+  const escrow = db
+    .prepare("SELECT * FROM escrows WHERE id = ?")
+    .get(donation.escrowId) as EscrowRow | undefined;
+
+  return { donation, escrow };
+};
+
 // Creates donation + escrow records in the database, updating campaign totals.
 // Does not store donor identity; only amount, timestamps, and tx references.
-export const createDonation = (campaignId: string, amountXrp: number) => {
+export const createDonation = (
+  campaignId: string,
+  amountXrp: number,
+  paymentTx: string
+) => {
   const db = getDb();
   const campaign = db
     .prepare("SELECT * FROM campaigns WHERE id = ?")
@@ -109,7 +131,7 @@ export const createDonation = (campaignId: string, amountXrp: number) => {
   const finishAfter = new Date(Date.now() + 60 * 60 * 1000).toISOString();
 
   // Placeholder tx hashes until XRPL integration is wired.
-  const paymentTx = `DB-PAYMENT-TX-${donationId}`;
+  const uniquePaymentTx = paymentTx;
   const escrowCreateTx = `DB-CREATE-TX-${escrowId}`;
   // Custody address should come from environment once wallet provisioning is complete.
   const ownerAddress = "rCUSTODYADDRESS...";
@@ -133,7 +155,7 @@ export const createDonation = (campaignId: string, amountXrp: number) => {
       campaignId,
       amountXrp,
       null,
-      paymentTx,
+      uniquePaymentTx,
       createdAt,
       null,
       "escrowed"

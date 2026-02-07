@@ -1,7 +1,14 @@
 import { Router } from "express";
 import { STUB_MODE } from "../config.js";
-import { approveEscrow as approveEscrowDb, getCampaignSummary as getCampaignSummaryDb } from "../data/dbStore.js";
-import { approveEscrow as approveEscrowStub, getCampaignSummary as getCampaignSummaryStub } from "../data/stubStore.js";
+import {
+  approveEscrow as approveEscrowDb,
+  getCampaignSummary as getCampaignSummaryDb
+} from "../data/dbStore.js";
+import {
+  approveEscrow as approveEscrowStub,
+  getCampaignSummary as getCampaignSummaryStub
+} from "../data/stubStore.js";
+import { conflict, notFound } from "../httpErrors.js";
 
 const router = Router();
 
@@ -13,7 +20,7 @@ router.get("/:id", (req, res) => {
     ? getCampaignSummaryStub(id)
     : getCampaignSummaryDb(id);
   if (!campaign) {
-    return res.status(404).json({ error: "Campaign not found" });
+    return notFound(res, "Campaign not found");
   }
 
   return res.json(campaign);
@@ -26,11 +33,11 @@ router.post("/:id/escrows/:escrowId/approve", (req, res) => {
     ? approveEscrowStub(id, escrowId)
     : approveEscrowDb(id, escrowId);
   if (!result) {
-    return res.status(404).json({ error: "Campaign or escrow not found" });
+    return notFound(res, "Campaign or escrow not found");
   }
 
   if ("alreadyReleased" in result && result.alreadyReleased) {
-    return res.status(400).json({ error: "Escrow already released" });
+    return conflict(res, "Escrow already released");
   }
 
   return res.json({

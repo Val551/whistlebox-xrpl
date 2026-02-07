@@ -52,8 +52,24 @@ export const getCampaignSummary = (id: string) => {
 // Returns full escrow records for verifier and audit views.
 export const listEscrows = () => state.escrows.map((escrow) => ({ ...escrow }));
 
+// Finds an existing donation by its client-supplied paymentTx for idempotency checks.
+export const findDonationByPaymentTx = (paymentTx: string) => {
+  const donation = state.donations.find((item) => item.paymentTx === paymentTx);
+  if (!donation) {
+    return null;
+  }
+
+  const escrow = state.escrows.find((item) => item.id === donation.escrowId);
+  return { donation, escrow };
+};
+
 // Creates deterministic donation + escrow records in stub mode.
-export const createDonation = (incomingCampaignId: string, amountXrp: number) => {
+// Uses the client-supplied paymentTx to mirror the real XRPL payment → escrow flow.
+export const createDonation = (
+  incomingCampaignId: string,
+  amountXrp: number,
+  paymentTx: string
+) => {
   if (incomingCampaignId !== campaignId) {
     return null;
   }
@@ -71,7 +87,7 @@ export const createDonation = (incomingCampaignId: string, amountXrp: number) =>
     campaignId,
     amountXrp,
     donorTag: null,
-    paymentTx: `STUB-PAYMENT-TX-${state.donationCounter}`,
+    paymentTx,
     createdAt,
     escrowId,
     status: "escrowed"
