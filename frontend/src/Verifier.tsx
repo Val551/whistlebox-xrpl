@@ -7,7 +7,7 @@ type Escrow = {
   id: string;
   campaignId: string;
   amount: number;
-  status: "pending" | "released" | "failed";
+  status: "locked" | "released" | "failed";
   txHashCreate?: string;
   txHashFinish?: string;
   createdAt: string;
@@ -42,10 +42,10 @@ const StatusBadge = ({ status }: { status: string }) => {
     switch (status.toLowerCase()) {
       case "released":
         return "released";
-      case "pending":
-        return "pending";
+      case "locked":
+        return "locked";
       default:
-        return "pending";
+        return "locked";
     }
   };
 
@@ -92,11 +92,11 @@ export default function Verifier() {
       const list = Array.isArray(data) ? data : data.escrows ?? [];
       setEscrows(list);
     } catch (err) {
-      setStatus(err instanceof Error ? err.message : "Failed to load escrows");
+      setStatus(err instanceof Error ? err.message : "Failed to load escrows!");
       setStatusType("error");
     } finally {
       setLoading(false);
-    }
+    } 
   }, []);
 
   useEffect(() => {
@@ -129,7 +129,7 @@ export default function Verifier() {
   };
 
   const pending = useMemo(
-    () => escrows.filter((escrow) => escrow.status === "pending"),
+    () => escrows.filter((escrow) => escrow.status === "locked"),
     [escrows]
   );
   const released = useMemo(

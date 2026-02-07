@@ -168,10 +168,21 @@ export default function App() {
       const res = await fetch(`${API_BASE}/api/donations`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ campaignId: CAMPAIGN_ID, amountXrp: amount })
+        body: JSON.stringify({ 
+        campaignId: CAMPAIGN_ID, 
+        amountXrp: amount,
+        requestId: crypto.randomUUID()  // ← ADD THIS
+        })
       });
 
       const data = await res.json();
+      if (res.status === 409) {
+        setStatus(`Donation already processed. Escrow ID: ${data.escrowId}`);
+        setStatusType("info");
+        await reloadData();
+        return;
+      }
+
       if (!res.ok) {
         throw new Error(data.error ?? "Donation failed");
       }
@@ -435,13 +446,13 @@ export default function App() {
                       />
                     </div>
                   )}
-                  <button
+                  {/* <button
                     onClick={() => releaseEscrow(lockedEscrows[0].id)}
                     disabled={loading}
                     style={{ marginTop: '8px', fontSize: '13px', padding: '10px 16px' }}
                   >
                     Verify & Release
-                  </button>
+                  </button> */}
                 </div>
               </ParticleCard>
             ) : (
@@ -551,9 +562,9 @@ export default function App() {
                     )}
                   </div>
 
-                  <button onClick={() => releaseEscrow(escrow.id)} disabled={loading}>
+                  {/* <button onClick={() => releaseEscrow(escrow.id)} disabled={loading}>
                     Verify & Release
-                  </button>
+                  </button> */}
                 </li>
               ))}
             </ul>
