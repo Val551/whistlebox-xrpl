@@ -133,7 +133,7 @@ export default function App() {
             onChange={(event) => setAmountXrp(event.target.value)}
           />
           <button onClick={donate} disabled={loading}>
-            Create Escrow
+            Create Escroddd
           </button>
         </div>
         <p className="hint">Pseudonymous by default. No donor identities stored.</p>
