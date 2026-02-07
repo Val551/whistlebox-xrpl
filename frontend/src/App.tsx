@@ -101,7 +101,7 @@ export default function App() {
   return (
     <div className="page">
       <header className="hero">
-        <p className="tag">Whistlebox XRPL</p>
+        <p className="tag">HELPP MEEE</p>
         <h1>{campaign?.title ?? "Loading campaign..."}</h1>
         <p className="subtitle">
           {campaign?.description ?? "Glass-box funding for investigative journalism."}
