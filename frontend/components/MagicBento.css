@@ -141,6 +141,12 @@
     grid-column: 4;
     grid-row: 3;
   }
+
+  .verifier-grid .magic-bento-card:nth-child(3),
+  .verifier-grid .magic-bento-card:nth-child(4) {
+    grid-column: auto;
+    grid-row: auto;
+  }
 }
 
 /* Border glow effect */
@@ -149,12 +155,10 @@
   position: absolute;
   inset: 0;
   padding: 6px;
-  background: radial-gradient(
-    var(--glow-radius) circle at var(--glow-x) var(--glow-y),
-    rgba(132, 0, 255, calc(var(--glow-intensity) * 0.8)) 0%,
-    rgba(132, 0, 255, calc(var(--glow-intensity) * 0.4)) 30%,
-    transparent 60%
-  );
+  background: radial-gradient(var(--glow-radius) circle at var(--glow-x) var(--glow-y),
+      rgba(132, 0, 255, calc(var(--glow-intensity) * 0.8)) 0%,
+      rgba(132, 0, 255, calc(var(--glow-intensity) * 0.4)) 30%,
+      transparent 60%);
   border-radius: inherit;
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
