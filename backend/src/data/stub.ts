@@ -5,7 +5,7 @@ export const campaign = {
   title: "City Hall Contracts Investigation",
   description: "Funding an investigative series into city hall procurement practices.",
   journalistAddress: "rJOURNALISTADDRESS...",
-  verifierAddress: "rVERIFIERADDRESS...",
+  verifierAddress: "rGk73CbmbdwDA8E7yQLvjP8jZhsxAaT6tC",
   goalXrp: 500, 
   totalRaisedXrp: 0,
   totalLockedXrp: 0,
@@ -19,4 +19,3 @@ export const escrows: any[] = [];
 
 // Stub data cleared - using database migrations instead
 export const donations: any[] = [];
-
