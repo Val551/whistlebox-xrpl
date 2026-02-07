@@ -125,16 +125,23 @@ export default function App() {
     [escrows]
   );
 
+  const reloadData = async () => {
+     const [campaignRes, escrowsRes] = await Promise.all([
+       fetch(`${API_BASE}/api/campaigns/${CAMPAIGN_ID}`),
+       fetch(`${API_BASE}/api/escrows`)
+     ]);
+     const [campaignData, escrowsData] = await Promise.all([
+       campaignRes.json(),
+       escrowsRes.json()
+     ]);
+     setCampaign(campaignData);
+     setEscrows(escrowsData.escrows ?? []);
+   };
+
   useEffect(() => {
     const load = async () => {
       try {
-        const campaignRes = await fetch(`${API_BASE}/api/campaigns/${CAMPAIGN_ID}`);
-        const campaignData = await campaignRes.json();
-        setCampaign(campaignData);
-
-        const escrowsRes = await fetch(`${API_BASE}/api/escrows`);
-        const escrowsData = await escrowsRes.json();
-        setEscrows(escrowsData.escrows ?? []);
+        await reloadData();
       } catch (error) {
         setStatus("Failed to load campaign data. Is the backend running?");
         setStatusType("error");
@@ -144,14 +151,22 @@ export default function App() {
     load();
   }, []);
 
+  
   const donate = async () => {
     setLoading(true);
     setStatus(null);
+    const amount = Number(amountXrp);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setStatus("Enter a valid XRP amount greater than 0.");
+      setStatusType("error");
+      setLoading(false);
+      return;
+    }
     try {
       const res = await fetch(`${API_BASE}/api/donations`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ campaignId: CAMPAIGN_ID, amountXrp: Number(amountXrp) })
+        body: JSON.stringify({ campaignId: CAMPAIGN_ID, amountXrp: amount })
       });
 
       const data = await res.json();
