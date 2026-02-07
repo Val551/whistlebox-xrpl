@@ -30,7 +30,13 @@ type Escrow = {
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3001";
 const CAMPAIGN_ID = import.meta.env.VITE_CAMPAIGN_ID ?? "cityhall-001";
-const EXPLORER_BASE = "https://testnet.xrpl.org/transactions";
+const XRPL_NETWORK = (import.meta.env.VITE_XRPL_NETWORK ?? "testnet").toLowerCase();
+const EXPLORER_BASE =
+  import.meta.env.VITE_XRPL_EXPLORER_BASE ??
+  (XRPL_NETWORK === "devnet"
+    ? "https://devnet.xrpl.org/transactions"
+    : "https://testnet.xrpl.org/transactions");
+const EXPLORER_LABEL = XRPL_NETWORK === "devnet" ? "Devnet" : "Testnet";
 
 // MagicBento configuration
 const DEFAULT_PARTICLE_COUNT = 12;
@@ -86,7 +92,7 @@ const ExplorerLink = ({ txHash, label }: { txHash: string; label?: string }) => 
       rel="noopener noreferrer"
       className="explorer-link"
     >
-      {label || "View on Explorer"}
+      {label || `View on ${EXPLORER_LABEL} Explorer`}
       <ExternalLinkIcon />
     </a>
   );
@@ -118,6 +124,7 @@ export default function App() {
   const [status, setStatus] = useState<string | null>(null);
   const [statusType, setStatusType] = useState<"success" | "error" | "info">("info");
   const [loading, setLoading] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const isMobile = useMobileDetection();
   const [view, setView] = useState<"campaign" | "verifier">("campaign");
@@ -138,6 +145,7 @@ export default function App() {
      ]);
      setCampaign(campaignData);
      setEscrows(escrowsData.escrows ?? []);
+     setLastUpdated(new Date());
    };
 
   useEffect(() => {
@@ -326,6 +334,21 @@ export default function App() {
               goal={campaign.goalXrp}
             />
           )}
+
+          <div className="row" style={{ marginTop: "16px", gap: "12px" }}>
+            <button
+              onClick={reloadData}
+              disabled={loading}
+              style={{ padding: "10px 16px", fontSize: "13px" }}
+            >
+              Refresh Data
+            </button>
+            <span style={{ fontSize: "12px", color: "#94a3b8" }}>
+              {lastUpdated
+                ? `Last updated ${lastUpdated.toLocaleTimeString()}`
+                : "Not yet updated"}
+            </span>
+          </div>
         </header>
 
         {/* MagicBento Grid with Campaign Data */}
@@ -520,6 +543,35 @@ export default function App() {
               </div>
             </ParticleCard>
 
+            {/* Card 7: Key Addresses */}
+            <ParticleCard
+              className="magic-bento-card magic-bento-card--text-autohide magic-bento-card--border-glow"
+              style={{ backgroundColor: '#060010' } as React.CSSProperties}
+              disableAnimations={shouldDisableAnimations}
+              particleCount={DEFAULT_PARTICLE_COUNT}
+              glowColor={DEFAULT_GLOW_COLOR}
+              enableTilt={false}
+              clickEffect={true}
+              enableMagnetism={false}
+            >
+              <div className="magic-bento-card__header">
+                <div className="magic-bento-card__label">Accountability</div>
+              </div>
+              <div className="magic-bento-card__content" style={{ gap: "12px" }}>
+                <div>
+                  <div className="magic-bento-card__description">Journalist wallet</div>
+                  <div className="address-line">{campaign?.journalistAddress ?? "-"}</div>
+                </div>
+                <div>
+                  <div className="magic-bento-card__description">Verifier</div>
+                  <div className="address-line">{campaign?.verifierAddress ?? "-"}</div>
+                </div>
+                <div className="magic-bento-card__description">
+                  Explorer network: {EXPLORER_LABEL}
+                </div>
+              </div>
+            </ParticleCard>
+
           </BentoCardGrid>
         </>
 
@@ -530,12 +582,12 @@ export default function App() {
           </div>
         )}
 
-        {/* Additional Escrows List (if more than 1) */}
-        {lockedEscrows.length > 1 && (
+        {/* Escrow Audit List */}
+        {escrows.length > 0 && (
           <section className="panel" style={{ marginTop: '24px' }}>
-            <h2>All Locked Escrows ({lockedEscrows.length})</h2>
+            <h2>All Escrows ({escrows.length})</h2>
             <ul className="list">
-              {lockedEscrows.map((escrow) => (
+              {escrows.map((escrow) => (
                 <li key={escrow.id}>
                   <div className="escrow-details">
                     <div className="escrow-header">
@@ -546,20 +598,24 @@ export default function App() {
                       <StatusBadge status={escrow.status} />
                     </div>
 
-                    {escrow.escrowCreateTx && (
-                      <div className="escrow-meta">
+                    <div className="escrow-meta">
+                      {escrow.escrowCreateTx ? (
                         <ExplorerLink
                           txHash={escrow.escrowCreateTx}
                           label="Create Tx"
                         />
-                        {escrow.escrowFinishTx && (
-                          <ExplorerLink
-                            txHash={escrow.escrowFinishTx}
-                            label="Release Tx"
-                          />
-                        )}
-                      </div>
-                    )}
+                      ) : (
+                        <div className="escrow-note">Create tx pending</div>
+                      )}
+                      {escrow.escrowFinishTx ? (
+                        <ExplorerLink
+                          txHash={escrow.escrowFinishTx}
+                          label="Release Tx"
+                        />
+                      ) : (
+                        <div className="escrow-note">Not released yet</div>
+                      )}
+                    </div>
                   </div>
 
                   {/* <button onClick={() => releaseEscrow(escrow.id)} disabled={loading}>

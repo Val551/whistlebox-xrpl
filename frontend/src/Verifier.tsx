@@ -15,7 +15,13 @@ type Escrow = {
 };
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3001";
-const EXPLORER_BASE = "https://testnet.xrpl.org/transactions";
+const XRPL_NETWORK = (import.meta.env.VITE_XRPL_NETWORK ?? "testnet").toLowerCase();
+const EXPLORER_BASE =
+  import.meta.env.VITE_XRPL_EXPLORER_BASE ??
+  (XRPL_NETWORK === "devnet"
+    ? "https://devnet.xrpl.org/transactions"
+    : "https://testnet.xrpl.org/transactions");
+const EXPLORER_LABEL = XRPL_NETWORK === "devnet" ? "Devnet" : "Testnet";
 
 const DEFAULT_PARTICLE_COUNT = 12;
 const DEFAULT_SPOTLIGHT_RADIUS = 400;
@@ -67,7 +73,7 @@ const ExplorerLink = ({ txHash, label }: { txHash: string; label?: string }) => 
       rel="noopener noreferrer"
       className="explorer-link"
     >
-      {label || "View on Explorer"}
+      {label || `View on ${EXPLORER_LABEL} Explorer`}
       <ExternalLinkIcon />
     </a>
   );

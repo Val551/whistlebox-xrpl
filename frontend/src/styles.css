@@ -340,6 +340,20 @@ button:disabled {
   gap: 12px;
   font-size: 13px;
   color: #64748b;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.escrow-note {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.address-line {
+  font-size: 11px;
+  color: #e2e8f0;
+  word-break: break-all;
+  font-family: "JetBrains Mono", "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
 }
 
 @media (max-width: 720px) {
