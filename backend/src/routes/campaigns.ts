@@ -4,7 +4,7 @@ import {
   approveEscrow as approveEscrowDb,
   getCampaignSummary as getCampaignSummaryDb,
   listCampaigns as listCampaignsDb,
-  createCampaign as createCampaignDb
+  createCampaign as createCampaignDb,
 } from "../data/dbStore.js";
 import {
   approveEscrow as approveEscrowStub,
@@ -83,7 +83,7 @@ router.post("/:id/escrows/:escrowId/approve", requireVerifierAuth, (req, res) =>
   }
 
   return res.json({
-    message: "Escrow approved and released (stub mode)",
+    message: "Escrow approved and released",
     campaignId: id,
     escrowId,
     finishTx: result.finishTx,

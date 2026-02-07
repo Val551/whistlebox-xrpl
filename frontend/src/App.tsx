@@ -405,6 +405,37 @@ export default function App() {
     }
   };
 
+  const resetData = async () => {
+    if (!window.confirm("Delete all campaigns and escrows for demo reset? This cannot be undone.")) {
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_BASE}/api/campaigns/admin/reset`, {
+        method: "DELETE"
+      });
+      const data = await res.json();
+      
+      if (!res.ok) {
+        setStatus(typeof data?.error === "string" ? data.error : "Reset failed");
+        setStatusType("error");
+        return;
+      }
+      
+      setStatus("All data cleared. Page will refresh...");
+      setStatusType("success");
+      
+      // Refresh page after 1 second
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Reset failed");
+      setStatusType("error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const shouldDisableAnimations = isMobile;
 
   if (view === "verifier") {

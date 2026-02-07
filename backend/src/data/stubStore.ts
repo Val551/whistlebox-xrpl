@@ -131,7 +131,7 @@ export const releaseEscrow = (escrowId: string) => {
 
   const escrow = state.escrows[escrowIndex];
   if (escrow.status === "released") {
-    return { escrow, alreadyReleased: true };
+    return { escrow, alreadyReleased: true, finishTx: escrow.escrowFinishTx ?? undefined };
   }
 
   const finishTx = `STUB-FINISH-TX-${escrowId}`;
@@ -152,6 +152,15 @@ export const releaseEscrow = (escrowId: string) => {
 export const approveEscrow = (incomingCampaignId: string, escrowId: string) => {
   if (incomingCampaignId !== campaignId) {
     return null;
+  }
+
+  const escrow = state.escrows.find((item) => item.id === escrowId);
+  if (!escrow) {
+    return null;
+  }
+
+  if (escrow.status === "released") {
+    return { escrow, alreadyReleased: true, finishTx: escrow.escrowFinishTx ?? undefined };
   }
 
   return releaseEscrow(escrowId);

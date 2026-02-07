@@ -35,22 +35,22 @@ async function runMigration(): Promise<void> {
       verifierAddress: verifierWalletAddress,
       goalXrp: 100,
     },
-    {
-      id: "school-board-001",
-      title: "School Board Corruption Investigation",
-      description: "Exposing financial irregularities and bid-rigging in school board contracts.",
-      journalistAddress: journalistWalletAddress,
-      verifierAddress: verifierWalletAddress,
-      goalXrp: 150,
-    },
-    {
-      id: "environmental-001",
-      title: "Environmental Violations Investigation",
-      description: "Investigating illegal dumping and environmental code violations by local industries.",
-      journalistAddress: journalistWalletAddress,
-      verifierAddress: verifierWalletAddress,
-      goalXrp: 120,
-    },
+    // {
+    //   id: "school-board-001",
+    //   title: "School Board Corruption Investigation",
+    //   description: "Exposing financial irregularities and bid-rigging in school board contracts.",
+    //   journalistAddress: journalistWalletAddress,
+    //   verifierAddress: verifierWalletAddress,
+    //   goalXrp: 150,
+    // },
+    // {
+    //   id: "environmental-001",
+    //   title: "Environmental Violations Investigation",
+    //   description: "Investigating illegal dumping and environmental code violations by local industries.",
+    //   journalistAddress: journalistWalletAddress,
+    //   verifierAddress: verifierWalletAddress,
+    //   goalXrp: 120,
+    // },
   ];
 
   for (const campaign of campaigns) {
@@ -103,14 +103,14 @@ async function runMigration(): Promise<void> {
   createTestEscrow("cityhall-001", 1, 3);
 
   // Campaign 2: school-board-001
-  createTestEscrow("school-board-001", 1, 1);
-  createTestEscrow("school-board-001", 1, 2);
-  createTestEscrow("school-board-001", 1, 3);
+//   createTestEscrow("school-board-001", 1, 1);
+//   createTestEscrow("school-board-001", 1, 2);
+//   createTestEscrow("school-board-001", 1, 3);
 
-  // Campaign 3: environmental-001
-  createTestEscrow("environmental-001", 1, 1);
-  createTestEscrow("environmental-001", 1, 2);
-  createTestEscrow("environmental-001", 1, 3);
+//   // Campaign 3: environmental-001
+//   createTestEscrow("environmental-001", 1, 1);
+//   createTestEscrow("environmental-001", 1, 2);
+//   createTestEscrow("environmental-001", 1, 3);
 
   console.log("");
   console.log("✓ Migration complete!");

@@ -323,7 +323,7 @@ export const releaseEscrow = (
   }
 
   if (escrow.status === "released") {
-    return { escrow, alreadyReleased: true };
+    return { escrow, alreadyReleased: true, finishTx: escrow.escrowFinishTx ?? undefined };
   }
 
   const finishTx = finishMeta?.finishTx ?? `DB-FINISH-TX-${escrowId}`;
@@ -361,8 +361,9 @@ export const approveEscrow = (campaignId: string, escrowId: string) => {
   }
 
   if (escrow.status === "released") {
-    return { escrow, alreadyReleased: true };
+    return { escrow, alreadyReleased: true, finishTx: escrow.escrowFinishTx ?? undefined };
   }
 
   return releaseEscrow(escrowId);
 };
+
