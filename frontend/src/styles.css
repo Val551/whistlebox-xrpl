@@ -186,7 +186,7 @@ button:disabled {
   background: #1e293b;
 }
 
-.list span {
+.list span:not(.status-icon):not(.status-indicator) {
   margin-left: 12px;
   color: #94a3b8;
 }
@@ -295,6 +295,7 @@ button:disabled {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  margin-right: auto;
 }
 
 .status-badge.locked {
@@ -358,8 +359,8 @@ button:disabled {
 
 .escrow-header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: flex-start;
+  justify-content: flex-start;
   gap: 12px;
   flex-wrap: wrap;
 }
@@ -378,11 +379,32 @@ button:disabled {
 
 .escrow-meta {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   font-size: 13px;
   color: #64748b;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-start;
+  margin: 0;
+  padding: 0;
+}
+
+.status-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status-icon.pending {
+  color: #60a5fa;
+}
+
+.status-icon.released {
+  color: #10b981;
 }
 
 .escrow-note {
