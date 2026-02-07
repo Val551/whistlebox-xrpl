@@ -238,10 +238,27 @@ export default function App() {
 
       const data = await res.json();
       if (res.status === 409) {
-        setStatus(`Donation already processed. Escrow ID: ${data.escrowId}`);
-        setStatusType("info");
-        await reloadData();
-        return;
+        const conflictMessage =
+          typeof data?.error === "string" ? data.error : "Donation conflict";
+        const existingEscrowId =
+          typeof data?.escrowId === "string"
+            ? data.escrowId
+            : typeof data?.details?.escrowId === "string"
+              ? data.details.escrowId
+              : undefined;
+
+        if (conflictMessage.toLowerCase().includes("duplicate")) {
+          setStatus(
+            existingEscrowId
+              ? `Donation already processed. Escrow ID: ${existingEscrowId}`
+              : "Donation already processed."
+          );
+          setStatusType("info");
+          await reloadData();
+          return;
+        }
+
+        throw new Error(conflictMessage);
       }
 
       if (!res.ok) {

@@ -43,6 +43,9 @@ CREATE TABLE IF NOT EXISTS escrows (
   condition TEXT,
   fulfillment TEXT,
   finishAfter TEXT NOT NULL,
+  offerSequence INTEGER,
+  createEngineResult TEXT,
+  createLedgerIndex INTEGER,
   status TEXT NOT NULL CHECK (status IN ('locked', 'released', 'failed')),
   FOREIGN KEY (campaignId) REFERENCES campaigns(id),
   FOREIGN KEY (donationId) REFERENCES donations(id)

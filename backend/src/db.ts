@@ -24,6 +24,22 @@ const loadSchema = (db: Database.Database) => {
   db.exec(schema);
 };
 
+// Adds columns required by newer story increments when running against an existing DB file.
+const ensureColumn = (
+  db: Database.Database,
+  table: string,
+  column: string,
+  definition: string
+) => {
+  const rows = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{
+    name: string;
+  }>;
+  const hasColumn = rows.some((row) => row.name === column);
+  if (!hasColumn) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
+};
+
 // Seeds the database with the default campaign + sample records if empty.
 // This keeps the app usable without XRPL integration while honoring the project idea.
 const seedDb = (db: Database.Database) => {
@@ -114,6 +130,9 @@ export const getDb = () => {
   const db = new Database(dbPath);
   db.exec("PRAGMA foreign_keys = ON;");
   loadSchema(db);
+  ensureColumn(db, "escrows", "offerSequence", "INTEGER");
+  ensureColumn(db, "escrows", "createEngineResult", "TEXT");
+  ensureColumn(db, "escrows", "createLedgerIndex", "INTEGER");
   seedDb(db);
 
   dbInstance = db;

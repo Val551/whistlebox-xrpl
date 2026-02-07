@@ -19,7 +19,22 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/api/health", (_req, res) => {
-  res.json({ ok: true, time: new Date().toISOString() });
+  const xrplWss = process.env.XRPL_WSS?.trim();
+  const normalizedWss = xrplWss && xrplWss.length > 0 ? xrplWss : null;
+  const loweredWss = normalizedWss?.toLowerCase() ?? "";
+  const network = loweredWss.includes("devnet")
+    ? "devnet"
+    : loweredWss.includes("testnet") || loweredWss.includes("altnet")
+      ? "testnet"
+      : "unknown";
+
+  res.json({
+    ok: true,
+    time: new Date().toISOString(),
+    mode: STUB_MODE ? "stub" : "real-xrpl",
+    network,
+    xrplWss: normalizedWss
+  });
 });
 
 app.use("/api/campaigns", campaignsRouter);

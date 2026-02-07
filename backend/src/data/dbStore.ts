@@ -29,6 +29,9 @@ type EscrowRow = {
   condition: string | null;
   fulfillment: string | null;
   finishAfter: string;
+  offerSequence: number | null;
+  createEngineResult: string | null;
+  createLedgerIndex: number | null;
   status: "locked" | "released" | "failed";
 };
 
@@ -91,6 +94,14 @@ export const listEscrows = () => {
     .all() as EscrowRow[];
 };
 
+// Returns a single escrow by id for release operations that need owner/sequence context.
+export const getEscrowById = (escrowId: string) => {
+  const db = getDb();
+  return db
+    .prepare("SELECT * FROM escrows WHERE id = ?")
+    .get(escrowId) as EscrowRow | undefined;
+};
+
 // Finds an existing donation by its client-supplied paymentTx for idempotency checks.
 export const findDonationByPaymentTx = (paymentTx: string) => {
   const db = getDb();
@@ -114,7 +125,16 @@ export const findDonationByPaymentTx = (paymentTx: string) => {
 export const createDonation = (
   campaignId: string,
   amountXrp: number,
-  paymentTx: string
+  paymentTx: string,
+  escrowMeta?: {
+    escrowCreateTx: string;
+    ownerAddress: string;
+    destinationAddress: string;
+    finishAfter: string;
+    offerSequence?: number;
+    createEngineResult?: string;
+    createLedgerIndex?: number;
+  }
 ) => {
   const db = getDb();
   const campaign = db
@@ -128,19 +148,20 @@ export const createDonation = (
   const donationId = formatId("donation", nextSequence("donations"));
   const escrowId = formatId("escrow", nextSequence("escrows"));
   const createdAt = new Date().toISOString();
-  const finishAfter = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-
-  // Placeholder tx hashes until XRPL integration is wired.
+  const finishAfter = escrowMeta?.finishAfter ?? new Date(Date.now() + 60 * 60 * 1000).toISOString();
   const uniquePaymentTx = paymentTx;
-  const escrowCreateTx = `DB-CREATE-TX-${escrowId}`;
-  // Custody address should come from environment once wallet provisioning is complete.
-  const ownerAddress = "rCUSTODYADDRESS...";
+  const escrowCreateTx = escrowMeta?.escrowCreateTx ?? `DB-CREATE-TX-${escrowId}`;
+  const ownerAddress = escrowMeta?.ownerAddress ?? "rCUSTODYADDRESS...";
+  const destinationAddress = escrowMeta?.destinationAddress ?? campaign.journalistAddress;
+  const offerSequence = escrowMeta?.offerSequence ?? null;
+  const createEngineResult = escrowMeta?.createEngineResult ?? null;
+  const createLedgerIndex = escrowMeta?.createLedgerIndex ?? null;
 
   const insertDonation = db.prepare(
     "INSERT INTO donations (id, campaignId, amountXrp, donorTag, paymentTx, createdAt, escrowId, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
   );
   const insertEscrow = db.prepare(
-    "INSERT INTO escrows (id, campaignId, donationId, amountXrp, currency, escrowCreateTx, escrowFinishTx, ownerAddress, destinationAddress, condition, fulfillment, finishAfter, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    "INSERT INTO escrows (id, campaignId, donationId, amountXrp, currency, escrowCreateTx, escrowFinishTx, ownerAddress, destinationAddress, condition, fulfillment, finishAfter, offerSequence, createEngineResult, createLedgerIndex, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
   );
   const updateDonation = db.prepare(
     "UPDATE donations SET escrowId = ? WHERE id = ?"
@@ -170,10 +191,13 @@ export const createDonation = (
       escrowCreateTx,
       null,
       ownerAddress,
-      campaign.journalistAddress,
+      destinationAddress,
       null,
       null,
       finishAfter,
+      offerSequence,
+      createEngineResult,
+      createLedgerIndex,
       "locked"
     );
 
@@ -195,7 +219,12 @@ export const createDonation = (
 
 // Marks an escrow as released and updates campaign totals.
 // Mirrors the verifier approval flow in the project idea.
-export const releaseEscrow = (escrowId: string) => {
+export const releaseEscrow = (
+  escrowId: string,
+  finishMeta?: {
+    finishTx?: string;
+  }
+) => {
   const db = getDb();
   const escrow = db
     .prepare("SELECT * FROM escrows WHERE id = ?")
@@ -209,7 +238,7 @@ export const releaseEscrow = (escrowId: string) => {
     return { escrow, alreadyReleased: true };
   }
 
-  const finishTx = `DB-FINISH-TX-${escrowId}`;
+  const finishTx = finishMeta?.finishTx ?? `DB-FINISH-TX-${escrowId}`;
   const updateEscrow = db.prepare(
     "UPDATE escrows SET escrowFinishTx = ?, status = ? WHERE id = ?"
   );
