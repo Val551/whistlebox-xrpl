@@ -193,6 +193,10 @@ Depends on: `US-RI-01` through `US-RI-09`
   - real mode stories requiring live XRPL
 - Include smoke scripts/commands in docs.
 
+Implementation artifact:
+- `docs/XRPL-ACCEPTANCE-SUITE.md`
+- `backend/scripts/xrpl-acceptance-smoke.sh`
+
 ### Acceptance Criteria
 - Test matrix covers:
   - US-01, US-02, US-06, US-07 in stub mode
