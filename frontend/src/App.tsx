@@ -140,6 +140,8 @@ const Lifecycle = ({ status }: { status: "locked" | "released" | "pending" }) =>
 };
 
 export default function App() {
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string>(CAMPAIGN_ID);
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [escrows, setEscrows] = useState<Escrow[]>([]);
   const [amountXrp, setAmountXrp] = useState("25");
@@ -190,32 +192,58 @@ export default function App() {
         ? "locked"
         : "pending";
 
-  const reloadData = async () => {
-     const [campaignRes, escrowsRes] = await Promise.all([
-       fetch(`${API_BASE}/api/campaigns/${CAMPAIGN_ID}`),
-       fetch(`${API_BASE}/api/escrows`)
-     ]);
-     const [campaignData, escrowsData] = await Promise.all([
-       campaignRes.json(),
-       escrowsRes.json()
-     ]);
-     setCampaign(campaignData);
-     setEscrows(escrowsData.escrows ?? []);
-     setLastUpdated(new Date());
-   };
-
-  useEffect(() => {
-    const load = async () => {
-      try {
-        await reloadData();
-      } catch (error) {
-        setStatus("Failed to load campaign data. Is the backend running?");
-        setStatusType("error");
+  // Fetch available campaigns
+  const fetchCampaigns = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/campaigns`);
+      const data = await res.json();
+      const campaignList = data.campaigns || data || [];
+      setCampaigns(Array.isArray(campaignList) ? campaignList : []);
+      
+      // If campaigns loaded but selected campaign not found, select first one
+      if (campaignList.length > 0 && !campaignList.find((c: Campaign) => c.id === selectedCampaignId)) {
+        setSelectedCampaignId(campaignList[0].id);
       }
-    };
+    } catch (error) {
+      console.error("Failed to load campaigns:", error);
+    }
+  };
 
-    load();
+  // Reload campaign data based on selected campaign
+  const reloadData = async () => {
+    const campaignToLoad = selectedCampaignId || CAMPAIGN_ID;
+    try {
+      const [campaignRes, escrowsRes] = await Promise.all([
+        fetch(`${API_BASE}/api/campaigns/${campaignToLoad}`),
+        fetch(`${API_BASE}/api/escrows`)
+      ]);
+      const [campaignData, escrowsData] = await Promise.all([
+        campaignRes.json(),
+        escrowsRes.json()
+      ]);
+      setCampaign(campaignData);
+      // Filter escrows to only show those for the selected campaign
+      const allEscrows = escrowsData.escrows ?? [];
+      const filteredEscrows = allEscrows.filter((escrow: Escrow) => escrow.campaignId === campaignToLoad);
+      setEscrows(filteredEscrows);
+      setLastUpdated(new Date());
+    } catch (error) {
+      setStatus("Failed to load campaign data. Is the backend running?");
+      setStatusType("error");
+    }
+  };
+
+  // Initial load: fetch campaigns
+  useEffect(() => {
+    fetchCampaigns();
   }, []);
+
+  // Reload data when selected campaign changes
+  useEffect(() => {
+    if (selectedCampaignId) {
+      reloadData();
+    }
+  }, [selectedCampaignId]);
 
   
   const donate = async () => {
@@ -248,7 +276,7 @@ export default function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-        campaignId: CAMPAIGN_ID, 
+        campaignId: selectedCampaignId || CAMPAIGN_ID, 
         amountXrp: amount,
         requestId: crypto.randomUUID()  // ← ADD THIS
         })
@@ -441,18 +469,41 @@ export default function App() {
         {/* Hero Header - Stays on Top */}
         <header className="hero">
           <p className="tag">GLASS BOX FUNDING</p>
+          
+          {/* Campaign Selector */}
+          <div style={{ marginBottom: "16px", display: "flex", gap: "12px", alignItems: "center" }}>
+            <label style={{ fontSize: "14px", color: "#94a3b8" }}>Select Campaign:</label>
+            <select
+              value={selectedCampaignId}
+              onChange={(e) => setSelectedCampaignId(e.target.value)}
+              style={{
+                padding: "8px 12px",
+                background: "rgba(15, 10, 30, 0.9)",
+                color: "#e2e8f0",
+                border: "1px solid rgba(148, 163, 184, 0.3)",
+                borderRadius: 6,
+                cursor: "pointer",
+                fontSize: 13,
+              }}
+            >
+              {campaigns.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.title}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <h1>{campaign?.title ?? "Loading campaign..."}</h1>
           <p className="subtitle">
             {campaign?.description ?? "Glass-box funding for investigative journalism."}
           </p>
 
           {/* Progress Bar */}
-          {campaign?.goalXrp && (
-            <ProgressBar
-              current={campaign.totalRaisedXrp}
-              goal={campaign.goalXrp}
-            />
-          )}
+          <ProgressBar
+            current={campaign?.totalRaisedXrp ?? 0}
+            goal={campaign?.goalXrp ?? 500}
+          />
 
           <div className="row" style={{ marginTop: "16px", gap: "12px" }}>
             <button
@@ -802,47 +853,11 @@ export default function App() {
               <div className="magic-bento-card__header">
                 <div className="magic-bento-card__label">Transparency</div>
               </div>
-<<<<<<< HEAD
               <div className="magic-bento-card__content">
                 <h2 className="magic-bento-card__title">{lockedEscrows.length}</h2>
                 <p className="magic-bento-card__description">Active Escrows</p>
-=======
-              <div className="magic-bento-card__content" style={{ gap: "12px" }}>
-                {latestReleased ? (
-                  <>
-                    <h2 className="magic-bento-card__title">
-                      {latestReleased.amountXrp} XRP Released
-                    </h2>
-                    <div className="magic-bento-card__description">
-                      Funds delivered to journalist wallet
-                    </div>
-                    <div className="address-line">
-                      {latestReleasedWithProof?.destinationAddress ??
-                        latestReleased.destinationAddress ??
-                        campaign?.journalistAddress ??
-                        "-"}
-                    </div>
-                    {latestReleasedWithProof?.escrowFinishTx ? (
-                      <ExplorerLink
-                        txHash={latestReleasedWithProof.escrowFinishTx}
-                        label="Release Tx"
-                      />
-                    ) : (
-                      <div className="escrow-note">
-                        Release proof unavailable for this record.
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <h2 className="magic-bento-card__title">No Releases Yet</h2>
-                    <div className="magic-bento-card__description">
-                      Funds release after verifier approval.
-                    </div>
-                  </>
-                )}
->>>>>>> 9bfd0daace22dee656186b4764b114c2e900a105
               </div>
+
             </ParticleCard>
             {/* Card 7: Key Addresses */}
             <ParticleCard

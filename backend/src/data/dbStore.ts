@@ -70,6 +70,46 @@ const nextSequence = (table: "donations" | "escrows") => {
   return row.count + 1;
 };
 
+// Creates a new campaign in the database. Returns the created campaign or null if id already exists.
+export const createCampaign = (campaign: {
+  id: string;
+  title: string;
+  description: string;
+  journalistAddress: string;
+  verifierAddress: string;
+  goalXrp?: number;
+}) => {
+  const db = getDb();
+  const result = db.prepare(
+    "INSERT OR IGNORE INTO campaigns (id, title, description, journalistAddress, verifierAddress, totalRaisedXrp, totalLockedXrp, totalReleasedXrp, escrowCount, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+  ).run(
+    campaign.id,
+    campaign.title,
+    campaign.description,
+    campaign.journalistAddress,
+    campaign.verifierAddress,
+    0,
+    0,
+    0,
+    0,
+    "active"
+  );
+
+  if (result.changes === 0) {
+    return null; // Campaign already exists
+  }
+
+  return db.prepare("SELECT * FROM campaigns WHERE id = ?").get(campaign.id) as CampaignRow;
+};
+
+// Returns all campaigns for list views.
+export const listCampaigns = () => {
+  const db = getDb();
+  return db
+    .prepare("SELECT * FROM campaigns ORDER BY id")
+    .all() as CampaignRow[];
+};
+
 // Returns a campaign with minimal escrow summary entries for public display.
 // Keeps public UI focused on totals and escrow states (glass-box transparency).
 export const getCampaignSummary = (id: string) => {

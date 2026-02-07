@@ -5,9 +5,16 @@ import "../components/MagicBento.css";
 
 type Campaign = {
   id: string;
-  verifierAddress: string;
+  title: string;
+  description: string;
   journalistAddress: string;
+  verifierAddress: string;
+  goalXrp?: number;
+  totalRaisedXrp: number;
+  totalLockedXrp: number;
   totalReleasedXrp: number;
+  escrowCount: number;
+  status: string;
 };
 
 type Escrow = {
@@ -94,6 +101,8 @@ const ExplorerLink = ({ txHash, label }: { txHash: string; label?: string }) => 
 };
 
 export default function Verifier() {
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string>(CAMPAIGN_ID);
   const [escrows, setEscrows] = useState<Escrow[]>([]);
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [loading, setLoading] = useState(false);
@@ -106,12 +115,29 @@ export default function Verifier() {
   const gridRef = useRef<HTMLDivElement>(null);
   const isMobile = useMobileDetection();
 
+  // Fetch available campaigns
+  const fetchCampaigns = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/campaigns`);
+      const data = await res.json();
+      const campaignList = data.campaigns || data || [];
+      setCampaigns(Array.isArray(campaignList) ? campaignList : []);
+      
+      // If campaigns loaded but selected campaign not found, select first one
+      if (campaignList.length > 0 && !campaignList.find((c: Campaign) => c.id === selectedCampaignId)) {
+        setSelectedCampaignId(campaignList[0].id);
+      }
+    } catch (error) {
+      console.error("Failed to load campaigns:", error);
+    }
+  };
+
   const fetchEscrows = useCallback(async () => {
     setLoading(true);
     setStatus(null);
     try {
       const [campaignRes, escrowsRes] = await Promise.all([
-        fetch(`${API_BASE}/api/campaigns/${CAMPAIGN_ID}`),
+        fetch(`${API_BASE}/api/campaigns/${selectedCampaignId}`),
         fetch(`${API_BASE}/api/escrows`)
       ]);
       if (!campaignRes.ok) throw new Error(`Campaign load failed (${campaignRes.status})`);
@@ -121,19 +147,29 @@ export default function Verifier() {
         escrowsRes.json()
       ]);
       setCampaign(campaignData);
+      // Filter escrows to only show those for the selected campaign
       const list = Array.isArray(escrowsData) ? escrowsData : escrowsData.escrows ?? [];
-      setEscrows(list);
+      const filteredEscrows = list.filter((escrow: Escrow) => escrow.campaignId === selectedCampaignId);
+      setEscrows(filteredEscrows);
     } catch (err) {
       setStatus(err instanceof Error ? err.message : "Failed to load escrows!");
       setStatusType("error");
     } finally {
       setLoading(false);
     } 
+  }, [selectedCampaignId]);
+
+  // Initial load: fetch campaigns
+  useEffect(() => {
+    fetchCampaigns();
   }, []);
 
+  // Reload escrows when selected campaign changes
   useEffect(() => {
-    fetchEscrows();
-  }, [fetchEscrows]);
+    if (selectedCampaignId) {
+      fetchEscrows();
+    }
+  }, [selectedCampaignId, fetchEscrows]);
 
   const handleRelease = async (escrowId: string) => {
     const expectedVerifier = campaign?.verifierAddress?.trim();
@@ -154,19 +190,7 @@ export default function Verifier() {
       return;
     }
     const escrow = escrows.find((item) => item.id === escrowId);
-    if (escrow?.finishAfter) {
-      const finishAfterMs = Date.parse(escrow.finishAfter);
-      if (!Number.isNaN(finishAfterMs) && Date.now() < finishAfterMs) {
-        setStatus(
-          `Escrow cannot be released yet. Try again after ${new Date(
-            finishAfterMs
-          ).toLocaleString()} (engine: tecNO_PERMISSION)`
-        );
-        setStatusType("info");
-        return;
-      }
-    }
-
+    
     setReleasingId(escrowId);
     setStatus("Submitting EscrowFinish to XRPL and waiting for ledger validation...");
     setStatusType("info");
@@ -180,6 +204,7 @@ export default function Verifier() {
         },
         body: JSON.stringify({ requestId: `release:${escrowId}` })
       });
+      
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -263,6 +288,31 @@ export default function Verifier() {
       <div className="page" style={{ position: "relative", zIndex: 1 }}>
         <header className="hero">
           <p className="tag">VERIFIER DASHBOARD</p>
+          
+          {/* Campaign Selector */}
+          <div style={{ marginBottom: "16px", display: "flex", gap: "12px", alignItems: "center" }}>
+            <label style={{ fontSize: "14px", color: "#94a3b8" }}>Select Campaign:</label>
+            <select
+              value={selectedCampaignId}
+              onChange={(e) => setSelectedCampaignId(e.target.value)}
+              style={{
+                padding: "8px 12px",
+                background: "rgba(15, 10, 30, 0.9)",
+                color: "#e2e8f0",
+                border: "1px solid rgba(148, 163, 184, 0.3)",
+                borderRadius: 6,
+                cursor: "pointer",
+                fontSize: 13,
+              }}
+            >
+              {campaigns.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.title}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <h1>Review Escrows</h1>
           <p className="subtitle">
             Approve locked escrows and release funds to journalists.
