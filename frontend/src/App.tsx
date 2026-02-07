@@ -853,9 +853,40 @@ export default function App() {
               <div className="magic-bento-card__header">
                 <div className="magic-bento-card__label">Transparency</div>
               </div>
-              <div className="magic-bento-card__content">
-                <h2 className="magic-bento-card__title">{lockedEscrows.length}</h2>
-                <p className="magic-bento-card__description">Active Escrows</p>
+              <div className="magic-bento-card__content" style={{ gap: "12px" }}>
+                {latestReleased ? (
+                  <>
+                    <h2 className="magic-bento-card__title">
+                      {latestReleased.amountXrp} XRP Released
+                    </h2>
+                    <div className="magic-bento-card__description">
+                      Funds delivered to journalist wallet
+                    </div>
+                    <div className="address-line">
+                      {latestReleasedWithProof?.destinationAddress ??
+                        latestReleased.destinationAddress ??
+                        campaign?.journalistAddress ??
+                        "-"}
+                    </div>
+                    {latestReleasedWithProof?.escrowFinishTx ? (
+                      <ExplorerLink
+                        txHash={latestReleasedWithProof.escrowFinishTx}
+                        label="Release Tx"
+                      />
+                    ) : (
+                      <div className="escrow-note">
+                        Release proof unavailable for this record.
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <h2 className="magic-bento-card__title">No Releases Yet</h2>
+                    <div className="magic-bento-card__description">
+                      Funds release after verifier approval.
+                    </div>
+                  </>
+                )}
               </div>
 
             </ParticleCard>
