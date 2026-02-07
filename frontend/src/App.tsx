@@ -118,6 +118,23 @@ const ProgressBar = ({ current, goal }: { current: number; goal: number }) => {
   );
 };
 
+const Lifecycle = ({ status }: { status: "locked" | "released" | "pending" }) => {
+  const isReleased = status === "released";
+  const isLocked = status === "locked" || status === "pending";
+
+  return (
+    <div className="lifecycle">
+      <div className={`lifecycle-step ${isLocked || isReleased ? "active" : ""}`}>
+        Locked
+      </div>
+      <div className="lifecycle-divider" />
+      <div className={`lifecycle-step ${isReleased ? "active" : ""}`}>Verified</div>
+      <div className="lifecycle-divider" />
+      <div className={`lifecycle-step ${isReleased ? "active" : ""}`}>Released</div>
+    </div>
+  );
+};
+
 export default function App() {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [escrows, setEscrows] = useState<Escrow[]>([]);
@@ -142,6 +159,20 @@ export default function App() {
     () => escrows.filter((escrow) => escrow.status === "locked"),
     [escrows]
   );
+  const releasedEscrows = useMemo(
+    () => escrows.filter((escrow) => escrow.status === "released"),
+    [escrows]
+  );
+  const latestReleased = useMemo(
+    () => (releasedEscrows.length ? releasedEscrows[releasedEscrows.length - 1] : null),
+    [releasedEscrows]
+  );
+  const lifecycleStatus =
+    latestReleased?.status === "released"
+      ? "released"
+      : lockedEscrows.length > 0
+        ? "locked"
+        : "pending";
 
   const reloadData = async () => {
      const [campaignRes, escrowsRes] = await Promise.all([
@@ -630,6 +661,7 @@ export default function App() {
                 <p className="magic-bento-card__description">
                   Verified and distributed to journalist
                 </p>
+                <Lifecycle status={lifecycleStatus} />
               </div>
             </ParticleCard>
 
@@ -672,6 +704,53 @@ export default function App() {
                     <h2 className="magic-bento-card__title">No Donation Yet</h2>
                     <div className="magic-bento-card__description">
                       Connect a wallet and donate to lock funds.
+                    </div>
+                  </>
+                )}
+              </div>
+            </ParticleCard>
+
+            {/* Card 8: Journalist Proof */}
+            <ParticleCard
+              className="magic-bento-card magic-bento-card--text-autohide magic-bento-card--border-glow"
+              style={{ backgroundColor: '#060010' } as React.CSSProperties}
+              disableAnimations={shouldDisableAnimations}
+              particleCount={DEFAULT_PARTICLE_COUNT}
+              glowColor={DEFAULT_GLOW_COLOR}
+              enableTilt={false}
+              clickEffect={true}
+              enableMagnetism={false}
+            >
+              <div className="magic-bento-card__header">
+                <div className="magic-bento-card__label">Journalist Proof</div>
+                <StatusBadge status={latestReleased ? "released" : "pending"} />
+              </div>
+              <div className="magic-bento-card__content" style={{ gap: "12px" }}>
+                {latestReleased ? (
+                  <>
+                    <h2 className="magic-bento-card__title">
+                      {latestReleased.amountXrp} XRP Released
+                    </h2>
+                    <div className="magic-bento-card__description">
+                      Funds delivered to journalist wallet
+                    </div>
+                    <div className="address-line">
+                      {campaign?.journalistAddress ?? "-"}
+                    </div>
+                    {latestReleased.escrowFinishTx ? (
+                      <ExplorerLink
+                        txHash={latestReleased.escrowFinishTx}
+                        label="Release Tx"
+                      />
+                    ) : (
+                      <div className="escrow-note">Release tx pending</div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <h2 className="magic-bento-card__title">No Releases Yet</h2>
+                    <div className="magic-bento-card__description">
+                      Funds release after verifier approval.
                     </div>
                   </>
                 )}
