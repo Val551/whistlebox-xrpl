@@ -72,3 +72,13 @@ CREATE TABLE IF NOT EXISTS escrow_release_requests (
 
 CREATE INDEX IF NOT EXISTS escrow_release_requests_escrowId_idx
   ON escrow_release_requests(escrowId);
+
+-- Verifier whitelist for campaign access control.
+CREATE TABLE IF NOT EXISTS verifier_whitelist (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  campaignId TEXT NOT NULL,
+  verifierAddress TEXT NOT NULL,
+  addedAt TEXT NOT NULL,
+  FOREIGN KEY (campaignId) REFERENCES campaigns(id),
+  UNIQUE(campaignId, verifierAddress)
+);
