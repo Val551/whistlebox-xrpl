@@ -3,18 +3,25 @@ import PixelBlast from "../components/PixelBlast";
 import { ParticleCard, BentoCardGrid, GlobalSpotlight, useMobileDetection } from "../components/MagicBento";
 import "../components/MagicBento.css";
 
+type Campaign = {
+  id: string;
+  verifierAddress: string;
+  journalistAddress: string;
+  totalReleasedXrp: number;
+};
+
 type Escrow = {
   id: string;
   campaignId: string;
-  amount: number;
+  amountXrp: number;
   status: "locked" | "released" | "failed";
-  txHashCreate?: string;
-  txHashFinish?: string;
-  createdAt: string;
-  releasedAt?: string;
+  escrowCreateTx?: string;
+  escrowFinishTx?: string | null;
+  finishAfter?: string;
 };
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3001";
+const CAMPAIGN_ID = import.meta.env.VITE_CAMPAIGN_ID ?? "cityhall-001";
 const XRPL_NETWORK = (import.meta.env.VITE_XRPL_NETWORK ?? "testnet").toLowerCase();
 const EXPLORER_BASE =
   import.meta.env.VITE_XRPL_EXPLORER_BASE ??
@@ -46,6 +53,8 @@ const ExternalLinkIcon = () => (
 const StatusBadge = ({ status }: { status: string }) => {
   const getStatusClass = () => {
     switch (status.toLowerCase()) {
+      case "verified":
+        return "released";
       case "released":
         return "released";
       case "locked":
@@ -81,10 +90,14 @@ const ExplorerLink = ({ txHash, label }: { txHash: string; label?: string }) => 
 
 export default function Verifier() {
   const [escrows, setEscrows] = useState<Escrow[]>([]);
+  const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [loading, setLoading] = useState(false);
   const [releasingId, setReleasingId] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [statusType, setStatusType] = useState<"success" | "error" | "info">("info");
+  const [walletAddress, setWalletAddress] = useState("");
+  const [walletConnected, setWalletConnected] = useState(false);
+  const [walletStatus, setWalletStatus] = useState<string | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const isMobile = useMobileDetection();
 
@@ -92,10 +105,18 @@ export default function Verifier() {
     setLoading(true);
     setStatus(null);
     try {
-      const res = await fetch(`${API_BASE}/api/escrows`);
-      if (!res.ok) throw new Error(`Server returned ${res.status}`);
-      const data = await res.json();
-      const list = Array.isArray(data) ? data : data.escrows ?? [];
+      const [campaignRes, escrowsRes] = await Promise.all([
+        fetch(`${API_BASE}/api/campaigns/${CAMPAIGN_ID}`),
+        fetch(`${API_BASE}/api/escrows`)
+      ]);
+      if (!campaignRes.ok) throw new Error(`Campaign load failed (${campaignRes.status})`);
+      if (!escrowsRes.ok) throw new Error(`Escrow load failed (${escrowsRes.status})`);
+      const [campaignData, escrowsData] = await Promise.all([
+        campaignRes.json(),
+        escrowsRes.json()
+      ]);
+      setCampaign(campaignData);
+      const list = Array.isArray(escrowsData) ? escrowsData : escrowsData.escrows ?? [];
       setEscrows(list);
     } catch (err) {
       setStatus(err instanceof Error ? err.message : "Failed to load escrows!");
@@ -110,6 +131,19 @@ export default function Verifier() {
   }, [fetchEscrows]);
 
   const handleRelease = async (escrowId: string) => {
+    const expectedVerifier = campaign?.verifierAddress?.trim();
+    const connected = walletConnected && walletAddress.trim().length > 0;
+    if (!connected) {
+      setStatus("Connect the verifier wallet before releasing.");
+      setStatusType("error");
+      return;
+    }
+    if (expectedVerifier && walletAddress.trim() !== expectedVerifier) {
+      setStatus("Connected wallet does not match the verifier address on record.");
+      setStatusType("error");
+      return;
+    }
+
     setReleasingId(escrowId);
     setStatus(null);
     try {
@@ -144,6 +178,25 @@ export default function Verifier() {
   );
 
   const shouldDisableAnimations = isMobile;
+  const verifierMatch = campaign?.verifierAddress
+    ? walletAddress.trim() === campaign.verifierAddress.trim()
+    : false;
+
+  const connectWallet = () => {
+    setWalletStatus(null);
+    if (!walletAddress.trim()) {
+      setWalletStatus("Enter a verifier wallet address to connect.");
+      return;
+    }
+    setWalletConnected(true);
+    setWalletStatus("Verifier wallet connected (local only).");
+  };
+
+  const disconnectWallet = () => {
+    setWalletConnected(false);
+    setWalletAddress("");
+    setWalletStatus("Wallet disconnected.");
+  };
 
   return (
     <div style={{ position: "relative", width: "100%", minHeight: "100vh", overflow: "hidden" }}>
@@ -210,6 +263,11 @@ export default function Verifier() {
               <div className="magic-bento-card__content">
                 <h2 className="magic-bento-card__title">{released.length}</h2>
                 <p className="magic-bento-card__description">Verified Payouts</p>
+                {campaign && (
+                  <div className="magic-bento-card__description">
+                    Total Released: {campaign.totalReleasedXrp} XRP
+                  </div>
+                )}
               </div>
             </ParticleCard>
 
@@ -229,6 +287,65 @@ export default function Verifier() {
               <div className="magic-bento-card__content">
                 <h2 className="magic-bento-card__title">{escrows.length}</h2>
                 <p className="magic-bento-card__description">All Escrows</p>
+              </div>
+            </ParticleCard>
+
+            <ParticleCard
+              className="magic-bento-card magic-bento-card--text-autohide magic-bento-card--border-glow"
+              style={{ backgroundColor: "#060010" } as React.CSSProperties}
+              disableAnimations={shouldDisableAnimations}
+              particleCount={DEFAULT_PARTICLE_COUNT}
+              glowColor={DEFAULT_GLOW_COLOR}
+              enableTilt={false}
+              clickEffect={true}
+              enableMagnetism={false}
+            >
+              <div className="magic-bento-card__header">
+                <div className="magic-bento-card__label">Verifier Wallet</div>
+                {walletConnected && (
+                  <StatusBadge status={verifierMatch ? "verified" : "locked"} />
+                )}
+              </div>
+              <div className="magic-bento-card__content" style={{ gap: "12px" }}>
+                <div className="magic-bento-card__description">
+                  Address on record:
+                </div>
+                <div className="address-line">{campaign?.verifierAddress ?? "-"}</div>
+                <div className="row">
+                  <input
+                    type="text"
+                    placeholder="r... (only stored locally)"
+                    value={walletAddress}
+                    onChange={(event) => setWalletAddress(event.target.value)}
+                    disabled={walletConnected}
+                    style={{ minWidth: "240px" }}
+                  />
+                  {walletConnected ? (
+                    <button onClick={disconnectWallet} disabled={loading}>
+                      Disconnect
+                    </button>
+                  ) : (
+                    <button onClick={connectWallet} disabled={loading}>
+                      Connect
+                    </button>
+                  )}
+                </div>
+                {walletConnected && (
+                  <div className="wallet-note">
+                    Connected: {walletAddress} — Only visible to you
+                  </div>
+                )}
+                {walletConnected && campaign?.verifierAddress && (
+                  <div
+                    className="wallet-status"
+                    style={{ color: verifierMatch ? "#34d399" : "#fca5a5" }}
+                  >
+                    {verifierMatch
+                      ? "Verifier address match"
+                      : "Wallet does not match verifier address"}
+                  </div>
+                )}
+                {walletStatus && <div className="wallet-status">{walletStatus}</div>}
               </div>
             </ParticleCard>
 
@@ -252,19 +369,25 @@ export default function Verifier() {
                     <div className="escrow-id" style={{ fontSize: "11px", marginBottom: "6px" }}>
                       {pending[0].id}
                     </div>
-                    <h2 className="magic-bento-card__title">{pending[0].amount} XRP</h2>
+                    <h2 className="magic-bento-card__title">{pending[0].amountXrp} XRP</h2>
+                  </div>
+                  <div>
+                    <div className="magic-bento-card__description">Identifier</div>
+                    <div className="address-line">
+                      {pending[0].escrowCreateTx ?? pending[0].id}
+                    </div>
                   </div>
                   <div style={{ fontSize: "12px", color: "#a0aec0" }}>
-                    Created {new Date(pending[0].createdAt).toLocaleString()}
+                    Pending verification
                   </div>
-                  {pending[0].txHashCreate && (
+                  {pending[0].escrowCreateTx && (
                     <div style={{ marginTop: "8px" }}>
-                      <ExplorerLink txHash={pending[0].txHashCreate} label="Create Tx" />
+                      <ExplorerLink txHash={pending[0].escrowCreateTx} label="Create Tx" />
                     </div>
                   )}
                   <button
                     onClick={() => handleRelease(pending[0].id)}
-                    disabled={releasingId === pending[0].id}
+                    disabled={releasingId === pending[0].id || !walletConnected || !verifierMatch}
                     style={{ marginTop: "8px", fontSize: "13px", padding: "10px 16px" }}
                   >
                     {releasingId === pending[0].id ? "Releasing..." : "Approve & Release"}
@@ -332,21 +455,24 @@ export default function Verifier() {
                     <div className="escrow-header">
                       <div>
                         <div className="escrow-id">{escrow.id}</div>
-                        <div className="escrow-amount">{escrow.amount} XRP</div>
+                        <div className="escrow-amount">{escrow.amountXrp} XRP</div>
                       </div>
                       <StatusBadge status={escrow.status} />
                     </div>
                     <div className="escrow-meta">
-                      <span>{new Date(escrow.createdAt).toLocaleString()}</span>
-                      {escrow.txHashCreate && (
-                        <ExplorerLink txHash={escrow.txHashCreate} label="Create Tx" />
+                      <span>Pending verification</span>
+                      <span>
+                        Identifier: {escrow.escrowCreateTx ?? escrow.id}
+                      </span>
+                      {escrow.escrowCreateTx && (
+                        <ExplorerLink txHash={escrow.escrowCreateTx} label="Create Tx" />
                       )}
                     </div>
                   </div>
 
                   <button
                     onClick={() => handleRelease(escrow.id)}
-                    disabled={releasingId === escrow.id}
+                    disabled={releasingId === escrow.id || !walletConnected || !verifierMatch}
                   >
                     {releasingId === escrow.id ? "Releasing..." : "Approve & Release"}
                   </button>
@@ -366,18 +492,14 @@ export default function Verifier() {
                     <div className="escrow-header">
                       <div>
                         <div className="escrow-id">{escrow.id}</div>
-                        <div className="escrow-amount">{escrow.amount} XRP</div>
+                        <div className="escrow-amount">{escrow.amountXrp} XRP</div>
                       </div>
                       <StatusBadge status={escrow.status} />
                     </div>
                     <div className="escrow-meta">
-                      <span>
-                        {escrow.releasedAt
-                          ? new Date(escrow.releasedAt).toLocaleString()
-                          : "Released"}
-                      </span>
-                      {escrow.txHashFinish && (
-                        <ExplorerLink txHash={escrow.txHashFinish} label="Release Tx" />
+                      <span>Released</span>
+                      {escrow.escrowFinishTx && (
+                        <ExplorerLink txHash={escrow.escrowFinishTx} label="Release Tx" />
                       )}
                     </div>
                   </div>
