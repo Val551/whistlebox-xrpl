@@ -327,50 +327,8 @@ export default function App() {
               </div>
             </ParticleCard>
 
-            {/* Card 4: Released Funds (Large) */}
-            <ParticleCard
-              className="magic-bento-card magic-bento-card--text-autohide magic-bento-card--border-glow"
-              style={{ backgroundColor: '#060010' } as React.CSSProperties}
-              disableAnimations={shouldDisableAnimations}
-              particleCount={DEFAULT_PARTICLE_COUNT}
-              glowColor={DEFAULT_GLOW_COLOR}
-              enableTilt={false}
-              clickEffect={true}
-              enableMagnetism={false}
-            >
-              <div className="magic-bento-card__header">
-                <div className="magic-bento-card__label">Released</div>
-              </div>
-              <div className="magic-bento-card__content">
-                <h2 className="magic-bento-card__title">{campaign?.totalReleasedXrp ?? "-"} XRP</h2>
-                <p className="magic-bento-card__description">
-                  Verified and distributed to journalist
-                </p>
-              </div>
-            </ParticleCard>
-
-            {/* Card 5: Escrow Count */}
-            <ParticleCard
-              className="magic-bento-card magic-bento-card--text-autohide magic-bento-card--border-glow"
-              style={{ backgroundColor: '#060010' } as React.CSSProperties}
-              disableAnimations={shouldDisableAnimations}
-              particleCount={DEFAULT_PARTICLE_COUNT}
-              glowColor={DEFAULT_GLOW_COLOR}
-              enableTilt={false}
-              clickEffect={true}
-              enableMagnetism={false}
-            >
-              <div className="magic-bento-card__header">
-                <div className="magic-bento-card__label">Transparency</div>
-              </div>
-              <div className="magic-bento-card__content">
-                <h2 className="magic-bento-card__title">{lockedEscrows.length}</h2>
-                <p className="magic-bento-card__description">Active Escrows</p>
-              </div>
-            </ParticleCard>
-
-            {/* Card 6: First Locked Escrow (if available) */}
-            {lockedEscrows.length > 0 && (
+            {/* Card 4: First Locked Escrow (if available) - Large */}
+            {lockedEscrows.length > 0 ? (
               <ParticleCard
                 className="magic-bento-card magic-bento-card--text-autohide magic-bento-card--border-glow"
                 style={{ backgroundColor: '#060010' } as React.CSSProperties}
@@ -382,6 +340,7 @@ export default function App() {
                 enableMagnetism={false}
               >
                 <div className="magic-bento-card__header">
+                  <div className="magic-bento-card__label">Pending</div>
                   <StatusBadge status={lockedEscrows[0].status} />
                 </div>
                 <div className="magic-bento-card__content" style={{ gap: '12px' }}>
@@ -410,7 +369,70 @@ export default function App() {
                   </button>
                 </div>
               </ParticleCard>
+            ) : (
+              <ParticleCard
+                className="magic-bento-card magic-bento-card--text-autohide magic-bento-card--border-glow"
+                style={{ backgroundColor: '#060010' } as React.CSSProperties}
+                disableAnimations={shouldDisableAnimations}
+                particleCount={DEFAULT_PARTICLE_COUNT}
+                glowColor={DEFAULT_GLOW_COLOR}
+                enableTilt={false}
+                clickEffect={true}
+                enableMagnetism={false}
+              >
+                <div className="magic-bento-card__header">
+                  <div className="magic-bento-card__label">Pending</div>
+                </div>
+                <div className="magic-bento-card__content">
+                  <h2 className="magic-bento-card__title">No Escrows</h2>
+                  <p className="magic-bento-card__description">
+                    No locked escrows yet. Create one above.
+                  </p>
+                </div>
+              </ParticleCard>
             )}
+
+            {/* Card 5: Escrow Count */}
+            <ParticleCard
+              className="magic-bento-card magic-bento-card--text-autohide magic-bento-card--border-glow"
+              style={{ backgroundColor: '#060010' } as React.CSSProperties}
+              disableAnimations={shouldDisableAnimations}
+              particleCount={DEFAULT_PARTICLE_COUNT}
+              glowColor={DEFAULT_GLOW_COLOR}
+              enableTilt={false}
+              clickEffect={true}
+              enableMagnetism={false}
+            >
+              <div className="magic-bento-card__header">
+                <div className="magic-bento-card__label">Transparency</div>
+              </div>
+              <div className="magic-bento-card__content">
+                <h2 className="magic-bento-card__title">{lockedEscrows.length}</h2>
+                <p className="magic-bento-card__description">Active Escrows</p>
+              </div>
+            </ParticleCard>
+
+            {/* Card 6: Released Funds */}
+            <ParticleCard
+              className="magic-bento-card magic-bento-card--text-autohide magic-bento-card--border-glow"
+              style={{ backgroundColor: '#060010' } as React.CSSProperties}
+              disableAnimations={shouldDisableAnimations}
+              particleCount={DEFAULT_PARTICLE_COUNT}
+              glowColor={DEFAULT_GLOW_COLOR}
+              enableTilt={false}
+              clickEffect={true}
+              enableMagnetism={false}
+            >
+              <div className="magic-bento-card__header">
+                <div className="magic-bento-card__label">Released</div>
+              </div>
+              <div className="magic-bento-card__content">
+                <h2 className="magic-bento-card__title">{campaign?.totalReleasedXrp ?? "-"} XRP</h2>
+                <p className="magic-bento-card__description">
+                  Verified and distributed to journalist
+                </p>
+              </div>
+            </ParticleCard>
 
           </BentoCardGrid>
         </>
