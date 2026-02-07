@@ -1,12 +1,18 @@
 import { Router } from "express";
-import { campaignId } from "../data/stub.js";
+import { STUB_MODE } from "../config.js";
+import { createDonation } from "../data/stubStore.js";
 
 const router = Router();
 
+// Accepts a donation intent and returns a stubbed donation payload plus identifiers.
 router.post("/", (req, res) => {
+  if (!STUB_MODE) {
+    return res.status(501).json({ error: "DB mode not implemented yet" });
+  }
+
   const { campaignId: incomingCampaignId, amountXrp } = req.body ?? {};
 
-  if (!incomingCampaignId || incomingCampaignId !== campaignId) {
+  if (!incomingCampaignId) {
     return res.status(400).json({ error: "Invalid campaignId" });
   }
 
@@ -14,11 +20,18 @@ router.post("/", (req, res) => {
     return res.status(400).json({ error: "Invalid amountXrp" });
   }
 
+  const normalizedAmount = Number(amountXrp);
+  const result = createDonation(incomingCampaignId, normalizedAmount);
+  if (!result) {
+    return res.status(400).json({ error: "Invalid campaignId" });
+  }
+
   return res.json({
     message: "Donation received (stub mode)",
-    donationId: `donation-${Date.now()}`,
-    escrowId: `escrow-${Date.now()}`,
-    escrowCreateTx: "STUB-CREATE-TX"
+    donationId: result.donation.id,
+    escrowId: result.escrow.id,
+    escrowCreateTx: result.escrow.escrowCreateTx,
+    donation: result.donation
   });
 });
 
