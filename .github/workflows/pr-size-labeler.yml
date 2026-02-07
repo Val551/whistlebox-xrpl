@@ -7,6 +7,7 @@ on:
 permissions:
   pull-requests: write
   contents: read
+  issues: write
 
 jobs:
   label:
@@ -34,24 +35,34 @@ jobs:
             const score = additions + deletions;
 
             let size;
-            if (score < 50) size = "size/XS";
-            else if (score < 200) size = "size/S";
-            else if (score < 500) size = "size/M";
-            else if (score < 1000) size = "size/L";
-            else size = "size/XL";
+            if (score < 50) size = "size-XS";
+            else if (score < 200) size = "size-S";
+            else if (score < 500) size = "size-M";
+            else if (score < 1000) size = "size-L";
+            else size = "size-XL";
 
-            const allSizes = ["size/XS","size/S","size/M","size/L","size/XL"];
+            const allSizes = ["size-XS", "size-S", "size-M", "size-L", "size-XL"];
 
             // Remove old size labels
             for (const label of allSizes) {
               try {
-                await github.rest.issues.removeLabel({ owner, repo, issue_number: prNumber, name: label });
+                await github.rest.issues.removeLabel({
+                  owner,
+                  repo,
+                  issue_number: prNumber,
+                  name: label,
+                });
               } catch (e) {}
             }
 
             // Ensure label exists (create if missing)
-            const labels = await github.rest.issues.listLabelsForRepo({ owner, repo, per_page: 100 });
-            const exists = labels.data.some(l => l.name === size);
+            const { data: repoLabels } = await github.rest.issues.listLabelsForRepo({
+              owner,
+              repo,
+              per_page: 100,
+            });
+
+            const exists = repoLabels.some(l => l.name === size);
             if (!exists) {
               await github.rest.issues.createLabel({
                 owner,
@@ -62,6 +73,7 @@ jobs:
               });
             }
 
+            // Add size label to PR (PRs are issues)
             await github.rest.issues.addLabels({
               owner,
               repo,
