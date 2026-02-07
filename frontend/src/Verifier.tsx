@@ -29,6 +29,7 @@ const EXPLORER_BASE =
     ? "https://devnet.xrpl.org/transactions"
     : "https://testnet.xrpl.org/transactions");
 const EXPLORER_LABEL = XRPL_NETWORK === "devnet" ? "Devnet" : "Testnet";
+const XRPL_TX_HASH_REGEX = /^[A-F0-9]{64}$/i;
 
 const DEFAULT_PARTICLE_COUNT = 12;
 const DEFAULT_SPOTLIGHT_RADIUS = 400;
@@ -73,11 +74,12 @@ const StatusBadge = ({ status }: { status: string }) => {
 };
 
 const ExplorerLink = ({ txHash, label }: { txHash: string; label?: string }) => {
-  if (!txHash) return null;
+  const normalizedHash = txHash.trim();
+  if (!XRPL_TX_HASH_REGEX.test(normalizedHash)) return null;
 
   return (
     <a
-      href={`${EXPLORER_BASE}/${txHash}`}
+      href={`${EXPLORER_BASE}/${normalizedHash}`}
       target="_blank"
       rel="noopener noreferrer"
       className="explorer-link"
@@ -149,7 +151,8 @@ export default function Verifier() {
     try {
       const res = await fetch(`${API_BASE}/api/escrows/${escrowId}/release`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" }
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId: `release:${escrowId}` })
       });
 
       if (!res.ok) {

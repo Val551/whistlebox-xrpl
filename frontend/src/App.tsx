@@ -38,6 +38,7 @@ const EXPLORER_BASE =
     : "https://testnet.xrpl.org/transactions");
 const EXPLORER_LABEL = XRPL_NETWORK === "devnet" ? "Devnet" : "Testnet";
 const MAX_DONATION_XRP = Number(import.meta.env.VITE_MAX_DONATION_XRP ?? 1000);
+const XRPL_TX_HASH_REGEX = /^[A-F0-9]{64}$/i;
 
 // MagicBento configuration
 const DEFAULT_PARTICLE_COUNT = 12;
@@ -84,11 +85,12 @@ const StatusBadge = ({ status }: { status: string }) => {
 
 // Explorer Link Component
 const ExplorerLink = ({ txHash, label }: { txHash: string; label?: string }) => {
-  if (!txHash) return null;
+  const normalizedHash = txHash.trim();
+  if (!XRPL_TX_HASH_REGEX.test(normalizedHash)) return null;
 
   return (
     <a
-      href={`${EXPLORER_BASE}/${txHash}`}
+      href={`${EXPLORER_BASE}/${normalizedHash}`}
       target="_blank"
       rel="noopener noreferrer"
       className="explorer-link"

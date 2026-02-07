@@ -58,3 +58,17 @@ CREATE UNIQUE INDEX IF NOT EXISTS donations_paymentTx_unique
 -- Ensure escrow TX hashes are unique when present.
 CREATE UNIQUE INDEX IF NOT EXISTS escrows_createTx_unique
   ON escrows(escrowCreateTx);
+
+-- Idempotency records for escrow release attempts.
+CREATE TABLE IF NOT EXISTS escrow_release_requests (
+  requestId TEXT PRIMARY KEY,
+  escrowId TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('in_progress', 'completed')),
+  finishTx TEXT,
+  createdAt TEXT NOT NULL,
+  updatedAt TEXT NOT NULL,
+  FOREIGN KEY (escrowId) REFERENCES escrows(id)
+);
+
+CREATE INDEX IF NOT EXISTS escrow_release_requests_escrowId_idx
+  ON escrow_release_requests(escrowId);
