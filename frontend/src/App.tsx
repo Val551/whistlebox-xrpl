@@ -802,11 +802,6 @@ export default function App() {
               <div className="magic-bento-card__header">
                 <div className="magic-bento-card__label">Transparency</div>
               </div>
-<<<<<<< HEAD
-              <div className="magic-bento-card__content">
-                <h2 className="magic-bento-card__title">{lockedEscrows.length}</h2>
-                <p className="magic-bento-card__description">Active Escrows</p>
-=======
               <div className="magic-bento-card__content" style={{ gap: "12px" }}>
                 {latestReleased ? (
                   <>
@@ -841,7 +836,6 @@ export default function App() {
                     </div>
                   </>
                 )}
->>>>>>> 9bfd0daace22dee656186b4764b114c2e900a105
               </div>
             </ParticleCard>
             {/* Card 7: Key Addresses */}

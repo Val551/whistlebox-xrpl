@@ -148,7 +148,9 @@ router.post("/:id/release", requireVerifierAuth, async (req, res) => {
       clearEscrowReleaseRequestDb(requestId);
       return notFound(res, "Escrow not found");
     }
-    completeEscrowReleaseRequestDb(requestId, result.finishTx);
+    if (result.finishTx) {
+      completeEscrowReleaseRequestDb(requestId, result.finishTx);
+    }
 
     return res.json({
       message: "Escrow released on XRPL",
