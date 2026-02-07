@@ -317,7 +317,7 @@ export default function Verifier() {
                 <div className="row" style={{ gap: "6px", flexWrap: "nowrap" }}>
                   <input
                     type="text"
-                    placeholder="r... (only stored locally)"
+                    placeholder="Wallet ID"
                     value={walletAddress}
                     onChange={(event) => setWalletAddress(event.target.value)}
                     disabled={walletConnected}

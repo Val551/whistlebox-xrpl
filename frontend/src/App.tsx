@@ -496,7 +496,7 @@ export default function App() {
               <div className="magic-bento-card__header">
                 <div className="magic-bento-card__label">Support (MAX donation: 1000 XRP)</div>
               </div>
-              <div className="magic-bento-card__content" style={{ gap: '16px' }}>
+              <div className="magic-bento-card__content" style={{ gap: '10px' }}>
                 <h2 className="magic-bento-card__title">Donate (Test XRP)</h2>
                 <div className="donation-block">
                   <label className="donation-label">Wallet (Testnet/Devnet)</label>
