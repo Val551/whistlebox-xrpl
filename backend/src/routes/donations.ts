@@ -48,13 +48,20 @@ const toApiError = (error: unknown): ApiError =>
 const submitEscrowCreate = async (amountXrp: number, destinationAddress: string) => {
   const xrplWss = requiredEnv("XRPL_WSS");
   const custodySeed = requiredEnv("CUSTODY_WALLET_SEED");
-  const finishAfterMinutes = Number(readEnv("XRPL_ESCROW_FINISH_AFTER_MINUTES") ?? "3");
-  if (!Number.isFinite(finishAfterMinutes) || finishAfterMinutes < 1) {
-    throw { status: 500, message: "Invalid XRPL_ESCROW_FINISH_AFTER_MINUTES" } as ApiError;
+  const finishAfterSecondsEnv = readEnv("XRPL_ESCROW_FINISH_AFTER_SECONDS");
+  const finishAfterSeconds = Number(
+    finishAfterSecondsEnv ??
+      (() => {
+        const minutes = Number(readEnv("XRPL_ESCROW_FINISH_AFTER_MINUTES") ?? "3");
+        return String(minutes * 60);
+      })()
+  );
+  if (!Number.isFinite(finishAfterSeconds) || finishAfterSeconds < 1) {
+    throw { status: 500, message: "Invalid XRPL_ESCROW_FINISH_AFTER_SECONDS" } as ApiError;
   }
 
   const amountDrops = xrpToDrops(String(amountXrp));
-  const finishAfterDate = new Date(Date.now() + finishAfterMinutes * 60 * 1000);
+  const finishAfterDate = new Date(Date.now() + finishAfterSeconds * 1000);
   const finishAfterIso = finishAfterDate.toISOString();
   const finishAfterRipple = isoTimeToRippleTime(finishAfterIso);
   const wallet = Wallet.fromSeed(custodySeed);
