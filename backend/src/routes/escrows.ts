@@ -2,6 +2,7 @@ import { Router } from "express";
 import { STUB_MODE } from "../config.js";
 import { listEscrows as listEscrowsDb, releaseEscrow as releaseEscrowDb } from "../data/dbStore.js";
 import { listEscrows as listEscrowsStub, releaseEscrow as releaseEscrowStub } from "../data/stubStore.js";
+import { conflict, notFound } from "../httpErrors.js";
 
 const router = Router();
 
@@ -16,11 +17,11 @@ router.post("/:id/release", (req, res) => {
   const { id } = req.params;
   const result = STUB_MODE ? releaseEscrowStub(id) : releaseEscrowDb(id);
   if (!result) {
-    return res.status(404).json({ error: "Escrow not found" });
+    return notFound(res, "Escrow not found");
   }
 
   if ("alreadyReleased" in result && result.alreadyReleased) {
-    return res.status(400).json({ error: "Escrow already released" });
+    return conflict(res, "Escrow already released");
   }
 
   return res.json({
