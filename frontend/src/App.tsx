@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useRef } from "react";
 import PixelBlast from "../components/PixelBlast";
 import { ParticleCard, BentoCardGrid, GlobalSpotlight, useMobileDetection } from '../components/MagicBento';
 import '../components/MagicBento.css';
+import Verifier from "./Verifier";
 
 type Campaign = {
   id: string;
@@ -77,7 +78,7 @@ const StatusBadge = ({ status }: { status: string }) => {
 // Explorer Link Component
 const ExplorerLink = ({ txHash, label }: { txHash: string; label?: string }) => {
   if (!txHash) return null;
-  
+
   return (
     <a
       href={`${EXPLORER_BASE}/${txHash}`}
@@ -119,6 +120,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
   const isMobile = useMobileDetection();
+  const [view, setView] = useState<"campaign" | "verifier">("campaign");
 
   const lockedEscrows = useMemo(
     () => escrows.filter((escrow) => escrow.status === "locked"),
@@ -176,12 +178,12 @@ export default function App() {
 
       setStatus(`Donation received. Escrow created: ${data.escrowId}`);
       setStatusType("success");
-      
+
       // Reload data after successful donation
       const escrowsRes = await fetch(`${API_BASE}/api/escrows`);
       const escrowsData = await escrowsRes.json();
       setEscrows(escrowsData.escrows ?? []);
-      
+
       const campaignRes = await fetch(`${API_BASE}/api/campaigns/${CAMPAIGN_ID}`);
       const campaignData = await campaignRes.json();
       setCampaign(campaignData);
@@ -206,12 +208,12 @@ export default function App() {
       }
       setStatus(`Escrow ${escrowId} released successfully.`);
       setStatusType("success");
-      
+
       // Reload data after successful release
       const escrowsRes = await fetch(`${API_BASE}/api/escrows`);
       const escrowsData = await escrowsRes.json();
       setEscrows(escrowsData.escrows ?? []);
-      
+
       const campaignRes = await fetch(`${API_BASE}/api/campaigns/${CAMPAIGN_ID}`);
       const campaignData = await campaignRes.json();
       setCampaign(campaignData);
@@ -225,12 +227,45 @@ export default function App() {
 
   const shouldDisableAnimations = isMobile;
 
+  if (view === "verifier") {
+    return (
+      <div style={{ position: "relative" }}>
+        <div
+          style={{
+            position: "fixed",
+            top: 16,
+            right: 16,
+            zIndex: 20,
+            display: "flex",
+            gap: 8
+          }}
+        >
+          <button
+            onClick={() => setView("campaign")}
+            style={{
+              padding: "8px 12px",
+              background: "rgba(15, 10, 30, 0.9)",
+              color: "#e2e8f0",
+              border: "1px solid rgba(148, 163, 184, 0.3)",
+              borderRadius: 8,
+              cursor: "pointer",
+              fontSize: 12
+            }}
+          >
+            Back to Campaign
+          </button>
+        </div>
+        <Verifier />
+      </div>
+    );
+  }
+
   return (
     <div style={{ position: 'relative', width: '100%', minHeight: '100vh', overflow: 'hidden' }}>
       {/* PixelBlast Background Layer */}
       <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0 }}>
-        <PixelBlast 
-          color="#8960df" 
+        <PixelBlast
+          color="#8960df"
           pixelSize={4}
           patternDensity={1}
           enableRipples={true}
@@ -239,7 +274,32 @@ export default function App() {
 
       {/* Main Content Layer */}
       <div className="page" style={{ position: 'relative', zIndex: 1 }}>
-        
+        <div
+          style={{
+            position: "fixed",
+            top: 16,
+            right: 16,
+            zIndex: 20,
+            display: "flex",
+            gap: 8
+          }}
+        >
+          <button
+            onClick={() => setView("verifier")}
+            style={{
+              padding: "8px 12px",
+              background: "rgba(15, 10, 30, 0.9)",
+              color: "#e2e8f0",
+              border: "1px solid rgba(148, 163, 184, 0.3)",
+              borderRadius: 8,
+              cursor: "pointer",
+              fontSize: 12
+            }}
+          >
+            Verifier View
+          </button>
+        </div>
+
         {/* Hero Header - Stays on Top */}
         <header className="hero">
           <p className="tag">GLASS BOX FUNDING</p>
@@ -247,12 +307,12 @@ export default function App() {
           <p className="subtitle">
             {campaign?.description ?? "Glass-box funding for investigative journalism."}
           </p>
-          
+
           {/* Progress Bar */}
           {campaign?.goalXrp && (
-            <ProgressBar 
-              current={campaign.totalRaisedXrp} 
-              goal={campaign.goalXrp} 
+            <ProgressBar
+              current={campaign.totalRaisedXrp}
+              goal={campaign.goalXrp}
             />
           )}
         </header>
@@ -268,7 +328,7 @@ export default function App() {
           />
 
           <BentoCardGrid gridRef={gridRef}>
-            
+
             {/* Card 1: Total Raised */}
             <ParticleCard
               className="magic-bento-card magic-bento-card--text-autohide magic-bento-card--border-glow"
@@ -369,14 +429,14 @@ export default function App() {
                   </div>
                   {lockedEscrows[0].escrowCreateTx && (
                     <div style={{ marginTop: '8px' }}>
-                      <ExplorerLink 
-                        txHash={lockedEscrows[0].escrowCreateTx} 
-                        label="View Tx" 
+                      <ExplorerLink
+                        txHash={lockedEscrows[0].escrowCreateTx}
+                        label="View Tx"
                       />
                     </div>
                   )}
-                  <button 
-                    onClick={() => releaseEscrow(lockedEscrows[0].id)} 
+                  <button
+                    onClick={() => releaseEscrow(lockedEscrows[0].id)}
                     disabled={loading}
                     style={{ marginTop: '8px', fontSize: '13px', padding: '10px 16px' }}
                   >
@@ -474,23 +534,23 @@ export default function App() {
                       </div>
                       <StatusBadge status={escrow.status} />
                     </div>
-                    
+
                     {escrow.escrowCreateTx && (
                       <div className="escrow-meta">
-                        <ExplorerLink 
-                          txHash={escrow.escrowCreateTx} 
-                          label="Create Tx" 
+                        <ExplorerLink
+                          txHash={escrow.escrowCreateTx}
+                          label="Create Tx"
                         />
                         {escrow.escrowFinishTx && (
-                          <ExplorerLink 
-                            txHash={escrow.escrowFinishTx} 
-                            label="Release Tx" 
+                          <ExplorerLink
+                            txHash={escrow.escrowFinishTx}
+                            label="Release Tx"
                           />
                         )}
                       </div>
                     )}
                   </div>
-                  
+
                   <button onClick={() => releaseEscrow(escrow.id)} disabled={loading}>
                     Verify & Release
                   </button>
