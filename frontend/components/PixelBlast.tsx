@@ -111,6 +111,8 @@ const createTouchTexture = (): TouchTexture => {
     }
     last = { x: norm.x, y: norm.y };
     trail.push({ x: norm.x, y: norm.y, age: 0, force, vx, vy });
+    // Cap trail length to prevent unbounded memory growth
+    while (trail.length > 256) trail.shift();
   };
   const update = () => {
     clear();
@@ -379,6 +381,19 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const visibilityRef = useRef({ visible: true });
   const speedRef = useRef(speed);
+  const pointerHandlersRef = useRef<{ down: (e: PointerEvent) => void; move: (e: PointerEvent) => void } | null>(null);
+
+  // IntersectionObserver to pause rendering when offscreen
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || !autoPauseOffscreen) return;
+    const io = new IntersectionObserver(
+      ([entry]) => { visibilityRef.current.visible = entry.isIntersecting; },
+      { threshold: 0 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [autoPauseOffscreen]);
 
   const threeRef = useRef<{
     renderer: THREE.WebGLRenderer;
@@ -488,6 +503,7 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
       const quad = new THREE.Mesh(quadGeom, material);
       scene.add(quad);
       const clock = new THREE.Clock();
+      let resizeTimeout: ReturnType<typeof setTimeout>;
       const setSize = () => {
         const w = container.clientWidth || 1;
         const h = container.clientHeight || 1;
@@ -498,7 +514,11 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
         uniforms.uPixelSize.value = pixelSize * renderer.getPixelRatio();
       };
       setSize();
-      const ro = new ResizeObserver(setSize);
+      const debouncedSetSize = () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(setSize, 100);
+      };
+      const ro = new ResizeObserver(debouncedSetSize);
       ro.observe(container);
       const randomFloat = (): number => {
         if (typeof window !== 'undefined' && window.crypto?.getRandomValues) {
@@ -577,6 +597,7 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
         const { fx, fy, w, h } = mapToPixels(e);
         touch.addTouch({ x: fx / w, y: fy / h });
       };
+      pointerHandlersRef.current = { down: onPointerDown, move: onPointerMove };
       renderer.domElement.addEventListener('pointerdown', onPointerDown, {
         passive: true
       });
@@ -585,10 +606,12 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
       });
       let raf = 0;
       const animate = () => {
+        raf = requestAnimationFrame(animate);
         if (autoPauseOffscreen && !visibilityRef.current.visible) {
-          raf = requestAnimationFrame(animate);
+          clock.stop();
           return;
         }
+        if (!clock.running) clock.start();
         uniforms.uTime.value = timeOffset + clock.getElapsedTime() * speedRef.current;
         if (liquidEffect) {
           const liqEffect = liquidEffect as Effect & { uniforms: Map<string, THREE.Uniform> };
@@ -608,7 +631,6 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
           });
           composer.render();
         } else renderer.render(scene, camera);
-        raf = requestAnimationFrame(animate);
       };
       raf = requestAnimationFrame(animate);
       threeRef.current = {
@@ -658,6 +680,11 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
       const t = threeRef.current;
       t.resizeObserver?.disconnect();
       cancelAnimationFrame(t.raf!);
+      if (pointerHandlersRef.current) {
+        t.renderer.domElement.removeEventListener('pointerdown', pointerHandlersRef.current.down);
+        t.renderer.domElement.removeEventListener('pointermove', pointerHandlersRef.current.move);
+        pointerHandlersRef.current = null;
+      }
       t.quad?.geometry.dispose();
       t.material.dispose();
       t.composer?.dispose();

@@ -33,7 +33,8 @@
   background: var(--background-dark);
   font-weight: 300;
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  contain: layout style paint;
 
   --glow-x: 50%;
   --glow-y: 50%;
@@ -187,6 +188,8 @@
 .particle-container {
   position: relative;
   overflow: hidden;
+  will-change: transform;
+  contain: layout style paint;
 }
 
 .particle::before {
@@ -218,4 +221,5 @@
 .bento-section {
   position: relative;
   user-select: none;
+  contain: layout style;
 }

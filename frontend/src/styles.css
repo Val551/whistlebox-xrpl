@@ -26,6 +26,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 32px;
+  contain: layout style;
+  touch-action: manipulation;
 }
 
 .hero {
@@ -75,7 +77,7 @@ h1 {
   padding: 18px 20px;
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(37, 99, 235, 0.15);
-  transition: all 0.3s ease;
+  transition: border-color 0.3s ease, transform 0.3s ease;
 }
 
 .stats div:hover {
@@ -127,7 +129,7 @@ input {
   width: 180px;
   background: #0f172a;
   color: #e2e8f0;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 input:focus {
@@ -145,7 +147,7 @@ button {
   font-size: 15px;
   cursor: pointer;
   font-weight: 500;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 button:hover:not(:disabled) {
@@ -176,7 +178,7 @@ button:disabled {
   background: #0f172a;
   border-radius: 12px;
   border: 1px solid rgba(37, 99, 235, 0.2);
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease, background 0.2s ease;
 }
 
 .list li:hover {
@@ -332,7 +334,7 @@ button:disabled {
   border-radius: 8px;
   background: rgba(96, 165, 250, 0.05);
   border: 1px solid rgba(96, 165, 250, 0.2);
-  transition: all 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
 .explorer-link:hover {
@@ -446,6 +448,8 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  will-change: transform;
+  contain: layout style;
 }
 
 .nav-bubble {
@@ -453,17 +457,18 @@ button:disabled {
   height: 56px;
   border-radius: 50%;
   border: none;
-  background: rgba(20, 27, 45, 0.95);
-  backdrop-filter: blur(20px);
+  background: rgba(20, 27, 45, 0.97);
+  backdrop-filter: blur(8px);
   color: #94a3b8;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(37, 99, 235, 0.2);
   position: relative;
+  will-change: transform;
 }
 
 .nav-bubble svg {
