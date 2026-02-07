@@ -3,4 +3,6 @@
   height: 100%;
   position: relative;
   overflow: hidden;
+  will-change: contents;
+  contain: strict;
 }

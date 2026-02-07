@@ -4,6 +4,7 @@ import App from "./App";
 import Verifier from "./Verifier";
 import WhistleblowerDashboard from "./WhistleBlowerDashboard";
 import Navigation from "../components/Navigation";
+import PixelBlast from "../components/PixelBlast";
 import "./styles.css";
 
 function Router() {
@@ -17,10 +18,22 @@ function Router() {
 
   return (
     <>
-      {currentView === 'campaign' && <App />}
-      {currentView === 'verifier' && <Verifier />}
-      {currentView === 'dashboard' && <WhistleblowerDashboard />}
-      
+      {/* Single shared PixelBlast background across all views */}
+      <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", zIndex: 0, pointerEvents: "none", contain: "strict" }}>
+        <PixelBlast
+          color="#8960df"
+          pixelSize={4}
+          patternDensity={1}
+          enableRipples={false}
+        />
+      </div>
+
+      <div style={{ position: "relative", zIndex: 1 }}>
+        {currentView === 'campaign' && <App />}
+        {currentView === 'verifier' && <Verifier />}
+        {currentView === 'dashboard' && <WhistleblowerDashboard />}
+      </div>
+
       <Navigation currentView={currentView} onNavigate={handleNavigate} />
     </>
   );

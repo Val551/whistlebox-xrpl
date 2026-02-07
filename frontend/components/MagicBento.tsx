@@ -148,21 +148,20 @@ const ParticleCard: React.FC<{
       magnetismAnimationRef.current?.kill();
 
       particlesRef.current.forEach(particle => {
-        gsap.to(particle, {
-          scale: 0,
-          opacity: 0,
-          duration: 0.3,
-          ease: 'back.in(1.7)',
-          onComplete: () => {
-            particle.parentNode?.removeChild(particle);
-          }
-        });
+        // Kill ALL infinite tweens targeting this particle first
+        gsap.killTweensOf(particle);
+        particle.parentNode?.removeChild(particle);
       });
       particlesRef.current = [];
     }, []);
 
     const animateParticles = useCallback(() => {
       if (!cardRef.current || !isHoveredRef.current) return;
+
+      // Clear any leftover particles from previous hover cycle
+      if (particlesRef.current.length > 0) {
+        clearAllParticles();
+      }
 
       if (!particlesInitialized.current) {
         initializeParticles();
@@ -199,7 +198,7 @@ const ParticleCard: React.FC<{
 
         timeoutsRef.current.push(timeoutId);
       });
-    }, [initializeParticles]);
+    }, [initializeParticles, clearAllParticles]);
 
     useEffect(() => {
       if (disableAnimations || !cardRef.current) return;
@@ -324,16 +323,26 @@ const ParticleCard: React.FC<{
         );
       };
 
+      let moveRafId: number | null = null;
+      const throttledMouseMove = (e: MouseEvent) => {
+        if (moveRafId !== null) return;
+        moveRafId = requestAnimationFrame(() => {
+          moveRafId = null;
+          handleMouseMove(e);
+        });
+      };
+
       element.addEventListener('mouseenter', handleMouseEnter);
       element.addEventListener('mouseleave', handleMouseLeave);
-      element.addEventListener('mousemove', handleMouseMove);
+      element.addEventListener('mousemove', throttledMouseMove, { passive: true });
       element.addEventListener('click', handleClick);
 
       return () => {
         isHoveredRef.current = false;
+        if (moveRafId !== null) cancelAnimationFrame(moveRafId);
         element.removeEventListener('mouseenter', handleMouseEnter);
         element.removeEventListener('mouseleave', handleMouseLeave);
-        element.removeEventListener('mousemove', handleMouseMove);
+        element.removeEventListener('mousemove', throttledMouseMove);
         element.removeEventListener('click', handleClick);
         clearAllParticles();
       };
@@ -365,6 +374,10 @@ const GlobalSpotlight: React.FC<{
 }) => {
     const spotlightRef = useRef<HTMLDivElement | null>(null);
     const isInsideSection = useRef(false);
+    const spotlightTweenRef = useRef<gsap.core.Tween | null>(null);
+    const spotlightOpacityTweenRef = useRef<gsap.core.Tween | null>(null);
+    const rafIdRef = useRef<number | null>(null);
+    const lastMouseRef = useRef<{ x: number; y: number } | null>(null);
 
     useEffect(() => {
       if (disableAnimations || !gridRef?.current || !enabled) return;
@@ -394,70 +407,77 @@ const GlobalSpotlight: React.FC<{
       spotlightRef.current = spotlight;
 
       const handleMouseMove = (e: MouseEvent) => {
-        if (!spotlightRef.current || !gridRef.current) return;
+        lastMouseRef.current = { x: e.clientX, y: e.clientY };
 
-        const section = gridRef.current.closest('.bento-section');
-        const rect = section?.getBoundingClientRect();
-        const mouseInside =
-          rect && e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom;
+        // Throttle to one update per animation frame
+        if (rafIdRef.current !== null) return;
+        rafIdRef.current = requestAnimationFrame(() => {
+          rafIdRef.current = null;
+          const mouse = lastMouseRef.current;
+          if (!spotlightRef.current || !gridRef.current || !mouse) return;
 
-        isInsideSection.current = mouseInside || false;
-        const cards = gridRef.current.querySelectorAll('.magic-bento-card');
+          const section = gridRef.current.closest('.bento-section');
+          const rect = section?.getBoundingClientRect();
+          const mouseInside =
+            rect && mouse.x >= rect.left && mouse.x <= rect.right && mouse.y >= rect.top && mouse.y <= rect.bottom;
 
-        if (!mouseInside) {
-          gsap.to(spotlightRef.current, {
-            opacity: 0,
-            duration: 0.3,
-            ease: 'power2.out'
-          });
-          cards.forEach(card => {
-            (card as HTMLElement).style.setProperty('--glow-intensity', '0');
-          });
-          return;
-        }
+          isInsideSection.current = mouseInside || false;
+          const cards = gridRef.current.querySelectorAll('.magic-bento-card');
 
-        const { proximity, fadeDistance } = calculateSpotlightValues(spotlightRadius);
-        let minDistance = Infinity;
-
-        cards.forEach(card => {
-          const cardElement = card as HTMLElement;
-          const cardRect = cardElement.getBoundingClientRect();
-          const centerX = cardRect.left + cardRect.width / 2;
-          const centerY = cardRect.top + cardRect.height / 2;
-          const distance =
-            Math.hypot(e.clientX - centerX, e.clientY - centerY) - Math.max(cardRect.width, cardRect.height) / 2;
-          const effectiveDistance = Math.max(0, distance);
-
-          minDistance = Math.min(minDistance, effectiveDistance);
-
-          let glowIntensity = 0;
-          if (effectiveDistance <= proximity) {
-            glowIntensity = 1;
-          } else if (effectiveDistance <= fadeDistance) {
-            glowIntensity = (fadeDistance - effectiveDistance) / (fadeDistance - proximity);
+          if (!mouseInside) {
+            spotlightOpacityTweenRef.current?.kill();
+            spotlightOpacityTweenRef.current = gsap.to(spotlightRef.current, {
+              opacity: 0,
+              duration: 0.3,
+              ease: 'power2.out'
+            });
+            cards.forEach(card => {
+              (card as HTMLElement).style.setProperty('--glow-intensity', '0');
+            });
+            return;
           }
 
-          updateCardGlowProperties(cardElement, e.clientX, e.clientY, glowIntensity, spotlightRadius);
-        });
+          const { proximity, fadeDistance } = calculateSpotlightValues(spotlightRadius);
+          let minDistance = Infinity;
 
-        gsap.to(spotlightRef.current, {
-          left: e.clientX,
-          top: e.clientY,
-          duration: 0.1,
-          ease: 'power2.out'
-        });
+          cards.forEach(card => {
+            const cardElement = card as HTMLElement;
+            const cardRect = cardElement.getBoundingClientRect();
+            const centerX = cardRect.left + cardRect.width / 2;
+            const centerY = cardRect.top + cardRect.height / 2;
+            const distance =
+              Math.hypot(mouse.x - centerX, mouse.y - centerY) - Math.max(cardRect.width, cardRect.height) / 2;
+            const effectiveDistance = Math.max(0, distance);
 
-        const targetOpacity =
-          minDistance <= proximity
-            ? 0.8
-            : minDistance <= fadeDistance
-              ? ((fadeDistance - minDistance) / (fadeDistance - proximity)) * 0.8
-              : 0;
+            minDistance = Math.min(minDistance, effectiveDistance);
 
-        gsap.to(spotlightRef.current, {
-          opacity: targetOpacity,
-          duration: targetOpacity > 0 ? 0.2 : 0.5,
-          ease: 'power2.out'
+            let glowIntensity = 0;
+            if (effectiveDistance <= proximity) {
+              glowIntensity = 1;
+            } else if (effectiveDistance <= fadeDistance) {
+              glowIntensity = (fadeDistance - effectiveDistance) / (fadeDistance - proximity);
+            }
+
+            updateCardGlowProperties(cardElement, mouse.x, mouse.y, glowIntensity, spotlightRadius);
+          });
+
+          // Use direct style instead of gsap.to for position (no tween buildup)
+          spotlightRef.current.style.left = `${mouse.x}px`;
+          spotlightRef.current.style.top = `${mouse.y}px`;
+
+          const targetOpacity =
+            minDistance <= proximity
+              ? 0.8
+              : minDistance <= fadeDistance
+                ? ((fadeDistance - minDistance) / (fadeDistance - proximity)) * 0.8
+                : 0;
+
+          spotlightOpacityTweenRef.current?.kill();
+          spotlightOpacityTweenRef.current = gsap.to(spotlightRef.current, {
+            opacity: targetOpacity,
+            duration: targetOpacity > 0 ? 0.2 : 0.5,
+            ease: 'power2.out'
+          });
         });
       };
 
@@ -467,7 +487,8 @@ const GlobalSpotlight: React.FC<{
           (card as HTMLElement).style.setProperty('--glow-intensity', '0');
         });
         if (spotlightRef.current) {
-          gsap.to(spotlightRef.current, {
+          spotlightOpacityTweenRef.current?.kill();
+          spotlightOpacityTweenRef.current = gsap.to(spotlightRef.current, {
             opacity: 0,
             duration: 0.3,
             ease: 'power2.out'
@@ -475,13 +496,24 @@ const GlobalSpotlight: React.FC<{
         }
       };
 
-      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mousemove', handleMouseMove, { passive: true });
       document.addEventListener('mouseleave', handleMouseLeave);
 
       return () => {
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseleave', handleMouseLeave);
-        spotlightRef.current?.parentNode?.removeChild(spotlightRef.current);
+        if (rafIdRef.current !== null) {
+          cancelAnimationFrame(rafIdRef.current);
+          rafIdRef.current = null;
+        }
+        spotlightTweenRef.current?.kill();
+        spotlightTweenRef.current = null;
+        spotlightOpacityTweenRef.current?.kill();
+        spotlightOpacityTweenRef.current = null;
+        if (spotlightRef.current) {
+          spotlightRef.current.parentNode?.removeChild(spotlightRef.current);
+          spotlightRef.current = null;
+        }
       };
     }, [gridRef, disableAnimations, enabled, spotlightRadius, glowColor]);
 
@@ -498,16 +530,114 @@ const BentoCardGrid: React.FC<{
   </div>
 );
 
-const useMobileDetection = () => {
-  const [isMobile, setIsMobile] = useState(false);
+// Extracted component to avoid event listener leaks in ref callbacks
+const NonParticleCard: React.FC<{
+  cardProps: { className: string; style: React.CSSProperties };
+  card: BentoCardProps;
+  shouldDisableAnimations: boolean;
+  enableTilt: boolean;
+  enableMagnetism: boolean;
+  clickEffect: boolean;
+  glowColor: string;
+}> = ({ cardProps, card, shouldDisableAnimations, enableTilt, enableMagnetism, clickEffect, glowColor }) => {
+  const elRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth <= MOBILE_BREAKPOINT);
+    const el = elRef.current;
+    if (!el || shouldDisableAnimations) return;
 
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = el.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
 
-    return () => window.removeEventListener('resize', checkMobile);
+      if (enableTilt) {
+        const rotateX = ((y - centerY) / centerY) * -10;
+        const rotateY = ((x - centerX) / centerX) * 10;
+        gsap.to(el, { rotateX, rotateY, duration: 0.1, ease: 'power2.out', transformPerspective: 1000 });
+      }
+
+      if (enableMagnetism) {
+        const magnetX = (x - centerX) * 0.05;
+        const magnetY = (y - centerY) * 0.05;
+        gsap.to(el, { x: magnetX, y: magnetY, duration: 0.3, ease: 'power2.out' });
+      }
+    };
+
+    const handleMouseLeave = () => {
+      if (enableTilt) gsap.to(el, { rotateX: 0, rotateY: 0, duration: 0.3, ease: 'power2.out' });
+      if (enableMagnetism) gsap.to(el, { x: 0, y: 0, duration: 0.3, ease: 'power2.out' });
+    };
+
+    const handleClick = (e: MouseEvent) => {
+      if (!clickEffect) return;
+      const rect = el.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const maxDistance = Math.max(
+        Math.hypot(x, y), Math.hypot(x - rect.width, y),
+        Math.hypot(x, y - rect.height), Math.hypot(x - rect.width, y - rect.height)
+      );
+      const ripple = document.createElement('div');
+      ripple.style.cssText = `position:absolute;width:${maxDistance * 2}px;height:${maxDistance * 2}px;border-radius:50%;background:radial-gradient(circle,rgba(${glowColor},0.4) 0%,rgba(${glowColor},0.2) 30%,transparent 70%);left:${x - maxDistance}px;top:${y - maxDistance}px;pointer-events:none;z-index:1000;`;
+      el.appendChild(ripple);
+      gsap.fromTo(ripple, { scale: 0, opacity: 1 }, { scale: 1, opacity: 0, duration: 0.8, ease: 'power2.out', onComplete: () => ripple.remove() });
+    };
+
+    let moveRafId: number | null = null;
+    const throttledMouseMove = (e: MouseEvent) => {
+      if (moveRafId !== null) return;
+      moveRafId = requestAnimationFrame(() => {
+        moveRafId = null;
+        handleMouseMove(e);
+      });
+    };
+
+    el.addEventListener('mousemove', throttledMouseMove, { passive: true });
+    el.addEventListener('mouseleave', handleMouseLeave);
+    el.addEventListener('click', handleClick);
+
+    return () => {
+      if (moveRafId !== null) cancelAnimationFrame(moveRafId);
+      el.removeEventListener('mousemove', throttledMouseMove);
+      el.removeEventListener('mouseleave', handleMouseLeave);
+      el.removeEventListener('click', handleClick);
+    };
+  }, [shouldDisableAnimations, enableTilt, enableMagnetism, clickEffect, glowColor]);
+
+  return (
+    <div ref={elRef} {...cardProps}>
+      <div className="magic-bento-card__header">
+        <div className="magic-bento-card__label">{card.label}</div>
+      </div>
+      <div className="magic-bento-card__content">
+        <h2 className="magic-bento-card__title">{card.title}</h2>
+        <p className="magic-bento-card__description">{card.description}</p>
+      </div>
+    </div>
+  );
+};
+
+const useMobileDetection = () => {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= MOBILE_BREAKPOINT);
+
+  useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    const checkMobile = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        setIsMobile(window.innerWidth <= MOBILE_BREAKPOINT);
+      }, 150);
+    };
+
+    window.addEventListener('resize', checkMobile, { passive: true });
+
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', checkMobile);
+    };
   }, []);
 
   return isMobile;
@@ -577,126 +707,16 @@ const MagicBento: React.FC<BentoProps> = ({
           }
 
           return (
-            <div
+            <NonParticleCard
               key={index}
-              {...cardProps}
-              ref={el => {
-                if (!el) return;
-
-                const handleMouseMove = (e: MouseEvent) => {
-                  if (shouldDisableAnimations) return;
-
-                  const rect = el.getBoundingClientRect();
-                  const x = e.clientX - rect.left;
-                  const y = e.clientY - rect.top;
-                  const centerX = rect.width / 2;
-                  const centerY = rect.height / 2;
-
-                  if (enableTilt) {
-                    const rotateX = ((y - centerY) / centerY) * -10;
-                    const rotateY = ((x - centerX) / centerX) * 10;
-                    gsap.to(el, {
-                      rotateX,
-                      rotateY,
-                      duration: 0.1,
-                      ease: 'power2.out',
-                      transformPerspective: 1000
-                    });
-                  }
-
-                  if (enableMagnetism) {
-                    const magnetX = (x - centerX) * 0.05;
-                    const magnetY = (y - centerY) * 0.05;
-                    gsap.to(el, {
-                      x: magnetX,
-                      y: magnetY,
-                      duration: 0.3,
-                      ease: 'power2.out'
-                    });
-                  }
-                };
-
-                const handleMouseLeave = () => {
-                  if (shouldDisableAnimations) return;
-
-                  if (enableTilt) {
-                    gsap.to(el, {
-                      rotateX: 0,
-                      rotateY: 0,
-                      duration: 0.3,
-                      ease: 'power2.out'
-                    });
-                  }
-
-                  if (enableMagnetism) {
-                    gsap.to(el, {
-                      x: 0,
-                      y: 0,
-                      duration: 0.3,
-                      ease: 'power2.out'
-                    });
-                  }
-                };
-
-                const handleClick = (e: MouseEvent) => {
-                  if (!clickEffect || shouldDisableAnimations) return;
-
-                  const rect = el.getBoundingClientRect();
-                  const x = e.clientX - rect.left;
-                  const y = e.clientY - rect.top;
-
-                  // Calculate the maximum distance from click point to any corner
-                  const maxDistance = Math.max(
-                    Math.hypot(x, y),
-                    Math.hypot(x - rect.width, y),
-                    Math.hypot(x, y - rect.height),
-                    Math.hypot(x - rect.width, y - rect.height)
-                  );
-
-                  const ripple = document.createElement('div');
-                  ripple.style.cssText = `
-                    position: absolute;
-                    width: ${maxDistance * 2}px;
-                    height: ${maxDistance * 2}px;
-                    border-radius: 50%;
-                    background: radial-gradient(circle, rgba(${glowColor}, 0.4) 0%, rgba(${glowColor}, 0.2) 30%, transparent 70%);
-                    left: ${x - maxDistance}px;
-                    top: ${y - maxDistance}px;
-                    pointer-events: none;
-                    z-index: 1000;
-                  `;
-
-                  el.appendChild(ripple);
-
-                  gsap.fromTo(
-                    ripple,
-                    {
-                      scale: 0,
-                      opacity: 1
-                    },
-                    {
-                      scale: 1,
-                      opacity: 0,
-                      duration: 0.8,
-                      ease: 'power2.out',
-                      onComplete: () => ripple.remove()
-                    }
-                  );
-                };
-
-                el.addEventListener('mousemove', handleMouseMove);
-                el.addEventListener('mouseleave', handleMouseLeave);
-                el.addEventListener('click', handleClick);
-              }}
-            >
-              <div className="magic-bento-card__header">
-                <div className="magic-bento-card__label">{card.label}</div>
-              </div>
-              <div className="magic-bento-card__content">
-                <h2 className="magic-bento-card__title">{card.title}</h2>
-                <p className="magic-bento-card__description">{card.description}</p>
-              </div>
-            </div>
+              cardProps={cardProps}
+              card={card}
+              shouldDisableAnimations={shouldDisableAnimations}
+              enableTilt={enableTilt}
+              enableMagnetism={enableMagnetism}
+              clickEffect={clickEffect}
+              glowColor={glowColor}
+            />
           );
         })}
       </BentoCardGrid>
