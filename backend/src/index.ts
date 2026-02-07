@@ -4,9 +4,16 @@ import cors from "cors";
 import campaignsRouter from "./routes/campaigns.js";
 import donationsRouter from "./routes/donations.js";
 import escrowsRouter from "./routes/escrows.js";
+import { STUB_MODE } from "./config.js";
+import { getDb } from "./db.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 3001);
+
+// Initializes SQLite when not running in stub mode.
+if (!STUB_MODE) {
+  getDb();
+}
 
 app.use(cors());
 app.use(express.json());
