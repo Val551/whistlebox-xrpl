@@ -304,7 +304,7 @@ export default function WhistleblowerDashboard() {
             {/* New Campaign */}
             <ParticleCard
               className="magic-bento-card magic-bento-card--text-autohide magic-bento-card--border-glow"
-              style={{ backgroundColor: "#060010", minHeight: "550px"} as React.CSSProperties}
+              style={{ backgroundColor: "#060010", height: "550px", gridRow: "span 3"} as React.CSSProperties}
               disableAnimations={shouldDisableAnimations}
               particleCount={DEFAULT_PARTICLE_COUNT}
               glowColor={DEFAULT_GLOW_COLOR}
@@ -315,17 +315,123 @@ export default function WhistleblowerDashboard() {
               <div className="magic-bento-card__header">
                 <div className="magic-bento-card__label">New Campaign</div>
               </div>
-              <div className="magic-bento-card__content" style={{ gap: "12px" }}>
-                <h2 className="magic-bento-card__title">Create Campaign</h2>
-                <p className="magic-bento-card__description">
-                  Start a new transparent funding campaign
-                </p>
-                <button
-                  onClick={() => setShowCreateForm(!showCreateForm)}
-                  style={{ marginTop: "8px" }}
-                >
-                  {showCreateForm ? "Cancel" : "Create New Campaign"}
-                </button>
+              <div className="magic-bento-card__content" style={{ gap: "12px", maxHeight: "480px", overflowY: "auto", paddingRight: "8px" }}>
+                {!showCreateForm ? (
+                  <>
+                    <h2 className="magic-bento-card__title">Create Campaign</h2>
+                    <p className="magic-bento-card__description">
+                      Start a new transparent funding campaign
+                    </p>
+                    <button
+                      onClick={() => setShowCreateForm(true)}
+                      style={{ marginTop: "8px" }}
+                    >
+                      Create New Campaign
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <h2 style={{ margin: "0 0 12px", fontSize: "18px", color: "#e2e8f0" }}>Campaign Details</h2>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      <div>
+                        <label style={{ display: "block", marginBottom: "6px", color: "#94a3b8", fontSize: "12px" }}>
+                          Title *
+                        </label>
+                        <input
+                          type="text"
+                          value={title}
+                          onChange={(e) => setTitle(e.target.value)}
+                          placeholder="Campaign title"
+                          style={{ width: "100%", fontSize: "13px", padding: "8px 10px" }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: "block", marginBottom: "6px", color: "#94a3b8", fontSize: "12px" }}>
+                          Description *
+                        </label>
+                        <textarea
+                          value={description}
+                          onChange={(e) => setDescription(e.target.value)}
+                          placeholder="Campaign description..."
+                          rows={3}
+                          style={{
+                            width: "100%",
+                            padding: "8px 10px",
+                            borderRadius: "8px",
+                            border: "1px solid rgba(37, 99, 235, 0.3)",
+                            fontSize: "13px",
+                            background: "#0f172a",
+                            color: "#e2e8f0",
+                            fontFamily: "inherit",
+                            resize: "vertical"
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: "block", marginBottom: "6px", color: "#94a3b8", fontSize: "12px" }}>
+                          Goal (XRP)
+                        </label>
+                        <input
+                          type="number"
+                          value={goalXrp}
+                          onChange={(e) => setGoalXrp(e.target.value)}
+                          placeholder="1000"
+                          min="0"
+                          style={{ width: "100%", fontSize: "13px", padding: "8px 10px" }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: "block", marginBottom: "6px", color: "#94a3b8", fontSize: "12px" }}>
+                          Journalist Wallet *
+                        </label>
+                        <input
+                          type="text"
+                          value={journalistAddress}
+                          onChange={(e) => setJournalistAddress(e.target.value)}
+                          placeholder="rN7n7..."
+                          style={{ width: "100%", fontFamily: "Monaco, monospace", fontSize: "12px", padding: "8px 10px" }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: "block", marginBottom: "6px", color: "#94a3b8", fontSize: "12px" }}>
+                          Verifier Address *
+                        </label>
+                        <input
+                          type="text"
+                          value={verifierAddress}
+                          onChange={(e) => setVerifierAddress(e.target.value)}
+                          placeholder="rPEPPER7..."
+                          style={{ width: "100%", fontFamily: "Monaco, monospace", fontSize: "12px", padding: "8px 10px" }}
+                        />
+                      </div>
+
+                      <div style={{ display: "flex", gap: "8px", marginTop: "8px", position: "sticky", bottom: 0, backgroundColor: "#060010", paddingTop: "8px" }}>
+                        <button 
+                          onClick={handleCreateCampaign} 
+                          disabled={loading}
+                          style={{ flex: 1, fontSize: "13px" }}
+                        >
+                          {loading ? "Creating..." : "Create"}
+                        </button>
+                        <button
+                          onClick={() => setShowCreateForm(false)}
+                          style={{ 
+                            flex: 1, 
+                            fontSize: "13px",
+                            background: "rgba(148, 163, 184, 0.1)", 
+                            color: "#94a3b8" 
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </ParticleCard>
 
@@ -351,114 +457,16 @@ export default function WhistleblowerDashboard() {
           </BentoCardGrid>
         </>
 
-        {/* Create Campaign Form */}
-        {showCreateForm && (
-          <section className="panel" style={{ marginTop: "24px" }}>
-            <h2>New Campaign Details</h2>
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "16px" }}>
-              <div>
-                <label style={{ display: "block", marginBottom: "8px", color: "#94a3b8", fontSize: "14px" }}>
-                  Campaign Title *
-                </label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="City Hall Corruption Investigation"
-                  style={{ width: "100%" }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: "block", marginBottom: "8px", color: "#94a3b8", fontSize: "14px" }}>
-                  Description *
-                </label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Investigating misuse of public funds..."
-                  rows={4}
-                  style={{
-                    width: "100%",
-                    padding: "12px 14px",
-                    borderRadius: "12px",
-                    border: "1px solid rgba(37, 99, 235, 0.3)",
-                    fontSize: "16px",
-                    background: "#0f172a",
-                    color: "#e2e8f0",
-                    fontFamily: "inherit",
-                    resize: "vertical"
-                  }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: "block", marginBottom: "8px", color: "#94a3b8", fontSize: "14px" }}>
-                  Funding Goal (XRP)
-                </label>
-                <input
-                  type="number"
-                  value={goalXrp}
-                  onChange={(e) => setGoalXrp(e.target.value)}
-                  placeholder="1000"
-                  min="0"
-                  style={{ width: "100%" }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: "block", marginBottom: "8px", color: "#94a3b8", fontSize: "14px" }}>
-                  Journalist Wallet Address (XRPL) *
-                </label>
-                <input
-                  type="text"
-                  value={journalistAddress}
-                  onChange={(e) => setJournalistAddress(e.target.value)}
-                  placeholder="rN7n7otQDd6FczFgLdlqtyMVrn3TyEhfy9"
-                  style={{ width: "100%", fontFamily: "Monaco, monospace", fontSize: "14px" }}
-                />
-                <p className="hint">Where released funds will be sent</p>
-              </div>
-
-              <div>
-                <label style={{ display: "block", marginBottom: "8px", color: "#94a3b8", fontSize: "14px" }}>
-                  Verifier Address (XRPL) *
-                </label>
-                <input
-                  type="text"
-                  value={verifierAddress}
-                  onChange={(e) => setVerifierAddress(e.target.value)}
-                  placeholder="rPEPPER7kfTD9w2To4CQk6UCfuHM9c6GDY"
-                  style={{ width: "100%", fontFamily: "Monaco, monospace", fontSize: "14px" }}
-                />
-                <p className="hint">Trusted party who can release escrows</p>
-              </div>
-
-              <div style={{ display: "flex", gap: "12px", marginTop: "8px" }}>
-                <button onClick={handleCreateCampaign} disabled={loading}>
-                  {loading ? "Creating..." : "Create Campaign"}
-                </button>
-                <button
-                  onClick={() => setShowCreateForm(false)}
-                  style={{ background: "rgba(148, 163, 184, 0.1)", color: "#94a3b8" }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* Status Messages */}
+        Status Messages
         {status && (
-          <div className={`status ${statusType}`} style={{ marginTop: "24px" }}>
+          <div className={`status ${statusType}`} style={{ marginTop: "12px" }}>
             {status}
           </div>
         )}
 
         {/* Campaigns List */}
         {campaigns.length > 0 && (
-          <section className="panel" style={{ marginTop: "24px" }}>
+          <section className="panel" style={{ marginTop: "2px" }}>
             <h2>Your Campaigns ({campaigns.length})</h2>
             <ul className="list" style={{ marginTop: "16px" }}>
               {campaigns.map((campaign) => (

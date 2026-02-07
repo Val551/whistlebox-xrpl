@@ -15,7 +15,9 @@
     "xrpl:step4": "tsx scripts/xrpl-escrow-finish.ts",
     "xrpl:step4:test": "tsx scripts/xrpl-escrow-finish.ts --assert",
     "xrpl:acceptance:stub": "bash scripts/xrpl-acceptance-smoke.sh stub",
-    "xrpl:acceptance:real": "bash scripts/xrpl-acceptance-smoke.sh real"
+    "xrpl:acceptance:real": "bash scripts/xrpl-acceptance-smoke.sh real",
+    "xrpl:verifier:setup": "tsx scripts/xrpl-verifier-wallet-bootstrap.ts",
+    "migrate:testdata": "tsx src/data/migrations.ts"
   },
   "dependencies": {
     "better-sqlite3": "^11.7.0",
