@@ -7,7 +7,9 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "xrpl:step1": "tsx scripts/xrpl-wallet-bootstrap.ts"
+    "xrpl:step1": "tsx scripts/xrpl-wallet-bootstrap.ts",
+    "xrpl:step2": "tsx scripts/xrpl-websocket-smoke.ts",
+    "xrpl:step2:test": "tsx scripts/xrpl-websocket-smoke.ts --assert"
   },
   "dependencies": {
     "cors": "^2.8.5",
