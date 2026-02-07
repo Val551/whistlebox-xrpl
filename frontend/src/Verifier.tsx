@@ -349,93 +349,7 @@ export default function Verifier() {
               </div>
             </ParticleCard>
 
-            {pending.length > 0 ? (
-              <ParticleCard
-                className="magic-bento-card magic-bento-card--text-autohide magic-bento-card--border-glow"
-                style={{ backgroundColor: "#060010", gridColumn: "auto", gridRow: "auto" } as React.CSSProperties}
-                disableAnimations={shouldDisableAnimations}
-                particleCount={DEFAULT_PARTICLE_COUNT}
-                glowColor={DEFAULT_GLOW_COLOR}
-                enableTilt={false}
-                clickEffect={true}
-                enableMagnetism={false}
-              >
-                <div className="magic-bento-card__header">
-                  <div className="magic-bento-card__label">Next Approval</div>
-                  <StatusBadge status={pending[0].status} />
-                </div>
-                <div className="magic-bento-card__content" style={{ gap: "12px" }}>
-                  <div>
-                    <div className="escrow-id" style={{ fontSize: "11px", marginBottom: "6px" }}>
-                      {pending[0].id}
-                    </div>
-                    <h2 className="magic-bento-card__title">{pending[0].amountXrp} XRP</h2>
-                  </div>
-                  <div>
-                    <div className="magic-bento-card__description">Identifier</div>
-                    <div className="address-line">
-                      {pending[0].escrowCreateTx ?? pending[0].id}
-                    </div>
-                  </div>
-                  <div style={{ fontSize: "12px", color: "#a0aec0" }}>
-                    Pending verification
-                  </div>
-                  {pending[0].escrowCreateTx && (
-                    <div style={{ marginTop: "8px" }}>
-                      <ExplorerLink txHash={pending[0].escrowCreateTx} label="Create Tx" />
-                    </div>
-                  )}
-                  <button
-                    onClick={() => handleRelease(pending[0].id)}
-                    disabled={releasingId === pending[0].id || !walletConnected || !verifierMatch}
-                    style={{ marginTop: "8px", fontSize: "13px", padding: "10px 16px" }}
-                  >
-                    {releasingId === pending[0].id ? "Releasing..." : "Approve & Release"}
-                  </button>
-                </div>
-              </ParticleCard>
-            ) : (
-              <ParticleCard
-                className="magic-bento-card magic-bento-card--text-autohide magic-bento-card--border-glow"
-                style={{ backgroundColor: "#060010", gridColumn: "auto", gridRow: "auto" } as React.CSSProperties}
-                disableAnimations={shouldDisableAnimations}
-                particleCount={DEFAULT_PARTICLE_COUNT}
-                glowColor={DEFAULT_GLOW_COLOR}
-                enableTilt={false}
-                clickEffect={true}
-                enableMagnetism={false}
-              >
-                <div className="magic-bento-card__header">
-                  <div className="magic-bento-card__label">Next Approval</div>
-                </div>
-                <div className="magic-bento-card__content">
-                  <h2 className="magic-bento-card__title">No Pending</h2>
-                  <p className="magic-bento-card__description">Nothing waiting for review.</p>
-                </div>
-              </ParticleCard>
-            )}
 
-            <ParticleCard
-              className="magic-bento-card magic-bento-card--text-autohide magic-bento-card--border-glow"
-              style={{ backgroundColor: "#060010", gridColumn: "1 / -1" } as React.CSSProperties}
-              disableAnimations={shouldDisableAnimations}
-              particleCount={DEFAULT_PARTICLE_COUNT}
-              glowColor={DEFAULT_GLOW_COLOR}
-              enableTilt={false}
-              clickEffect={true}
-              enableMagnetism={false}
-            >
-              <div className="magic-bento-card__header">
-                <div className="magic-bento-card__label">Sync</div>
-              </div>
-              <div className="magic-bento-card__content" style={{ gap: "12px" }}>
-                <h2 className="magic-bento-card__title">Refresh</h2>
-                <p className="magic-bento-card__description">Pull latest escrows</p>
-                <button onClick={fetchEscrows} disabled={loading}>
-                  {loading ? "Refreshing..." : "Refresh"}
-                </button>
-              </div>
-            </ParticleCard>
           </BentoCardGrid>
         </>
 
@@ -445,9 +359,9 @@ export default function Verifier() {
           </div>
         )}
 
-        {pending.length > 1 && (
+        {pending.length > 0 && (
           <section className="panel" style={{ marginTop: "24px" }}>
-            <h2>All Pending Escrows ({pending.length})</h2>
+            <h2>Pending Escrows ({pending.length})</h2>
             <ul className="list">
               {pending.map((escrow) => (
                 <li key={escrow.id}>
@@ -456,14 +370,16 @@ export default function Verifier() {
                       <div>
                         <div className="escrow-id">{escrow.id}</div>
                         <div className="escrow-amount">{escrow.amountXrp} XRP</div>
+                        <span className="status-icon pending">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <polyline points="12 6 12 12 16 14" />
+                          </svg>
+                          Pending
+                        </span>
                       </div>
-                      <StatusBadge status={escrow.status} />
                     </div>
                     <div className="escrow-meta">
-                      <span>Pending verification</span>
-                      <span>
-                        Identifier: {escrow.escrowCreateTx ?? escrow.id}
-                      </span>
                       {escrow.escrowCreateTx && (
                         <ExplorerLink txHash={escrow.escrowCreateTx} label="Create Tx" />
                       )}
@@ -493,11 +409,16 @@ export default function Verifier() {
                       <div>
                         <div className="escrow-id">{escrow.id}</div>
                         <div className="escrow-amount">{escrow.amountXrp} XRP</div>
+                        <span className="status-icon released">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                            <polyline points="22 4 12 14.01 9 11.01" />
+                          </svg>
+                          Released
+                        </span>
                       </div>
-                      <StatusBadge status={escrow.status} />
                     </div>
                     <div className="escrow-meta">
-                      <span>Released</span>
                       {escrow.escrowFinishTx && (
                         <ExplorerLink txHash={escrow.escrowFinishTx} label="Release Tx" />
                       )}
