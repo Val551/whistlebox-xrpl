@@ -407,7 +407,10 @@ export default function Verifier() {
                   <StatusBadge status={verifierMatch ? "verified" : "locked"} />
                 )}
               </div>
-              <div className="magic-bento-card__content" style={{ gap: "0.5em" }}>
+              <div
+                className={`magic-bento-card__content ${walletConnected ? "verifier-wallet-scroll" : ""}`}
+                style={{ gap: "0.5em" }}
+              >
                 <div className="magic-bento-card__description">
                   Address on record:
                 </div>
