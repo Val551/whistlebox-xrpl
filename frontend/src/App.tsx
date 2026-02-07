@@ -37,6 +37,7 @@ const EXPLORER_BASE =
     ? "https://devnet.xrpl.org/transactions"
     : "https://testnet.xrpl.org/transactions");
 const EXPLORER_LABEL = XRPL_NETWORK === "devnet" ? "Devnet" : "Testnet";
+const MAX_DONATION_XRP = Number(import.meta.env.VITE_MAX_DONATION_XRP ?? 1000);
 
 // MagicBento configuration
 const DEFAULT_PARTICLE_COUNT = 12;
@@ -121,6 +122,14 @@ export default function App() {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [escrows, setEscrows] = useState<Escrow[]>([]);
   const [amountXrp, setAmountXrp] = useState("25");
+  const [walletAddress, setWalletAddress] = useState("");
+  const [walletConnected, setWalletConnected] = useState(false);
+  const [walletStatus, setWalletStatus] = useState<string | null>(null);
+  const [latestDonation, setLatestDonation] = useState<{
+    amountXrp: number;
+    escrowId: string;
+    escrowCreateTx?: string;
+  } | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [statusType, setStatusType] = useState<"success" | "error" | "info">("info");
   const [loading, setLoading] = useState(false);
@@ -165,9 +174,22 @@ export default function App() {
   const donate = async () => {
     setLoading(true);
     setStatus(null);
+    setWalletStatus(null);
     const amount = Number(amountXrp);
     if (!Number.isFinite(amount) || amount <= 0) {
       setStatus("Enter a valid XRP amount greater than 0.");
+      setStatusType("error");
+      setLoading(false);
+      return;
+    }
+    if (amount > MAX_DONATION_XRP) {
+      setStatus(`Donation exceeds max of ${MAX_DONATION_XRP} XRP.`);
+      setStatusType("error");
+      setLoading(false);
+      return;
+    }
+    if (!walletConnected) {
+      setStatus("Connect a wallet before donating.");
       setStatusType("error");
       setLoading(false);
       return;
@@ -195,8 +217,13 @@ export default function App() {
         throw new Error(data.error ?? "Donation failed");
       }
 
-      setStatus(`Donation received. Escrow created: ${data.escrowId}`);
+      setStatus(`Funds locked. Escrow created: ${data.escrowId}`);
       setStatusType("success");
+      setLatestDonation({
+        amountXrp: amount,
+        escrowId: data.escrowId,
+        escrowCreateTx: data.escrowCreateTx
+      });
 
       // Reload data after successful donation
       const escrowsRes = await fetch(`${API_BASE}/api/escrows`);
@@ -212,6 +239,22 @@ export default function App() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const connectWallet = () => {
+    setWalletStatus(null);
+    if (!walletAddress.trim()) {
+      setWalletStatus("Enter a wallet address to connect.");
+      return;
+    }
+    setWalletConnected(true);
+    setWalletStatus("Wallet connected (local only).");
+  };
+
+  const disconnectWallet = () => {
+    setWalletConnected(false);
+    setWalletAddress("");
+    setWalletStatus("Wallet disconnected.");
   };
 
   const releaseEscrow = async (escrowId: string) => {
@@ -419,10 +462,41 @@ export default function App() {
               </div>
               <div className="magic-bento-card__content" style={{ gap: '16px' }}>
                 <h2 className="magic-bento-card__title">Donate (Test XRP)</h2>
+                <div className="donation-block">
+                  <label className="donation-label">Wallet (Testnet/Devnet)</label>
+                  <div className="row">
+                    <input
+                      type="text"
+                      placeholder="r... (only stored locally)"
+                      value={walletAddress}
+                      onChange={(event) => setWalletAddress(event.target.value)}
+                      disabled={walletConnected}
+                      style={{ minWidth: "240px" }}
+                    />
+                    {walletConnected ? (
+                      <button onClick={disconnectWallet} disabled={loading}>
+                        Disconnect
+                      </button>
+                    ) : (
+                      <button onClick={connectWallet} disabled={loading}>
+                        Connect Wallet
+                      </button>
+                    )}
+                  </div>
+                  {walletConnected && (
+                    <div className="wallet-note">
+                      Connected: {walletAddress} — Only visible to you
+                    </div>
+                  )}
+                  {walletStatus && (
+                    <div className="wallet-status">{walletStatus}</div>
+                  )}
+                </div>
                 <div className="row" style={{ marginTop: '12px' }}>
                   <input
                     type="number"
                     min="1"
+                    max={MAX_DONATION_XRP}
                     value={amountXrp}
                     onChange={(event) => setAmountXrp(event.target.value)}
                   />
@@ -430,8 +504,24 @@ export default function App() {
                     Create Escrow
                   </button>
                 </div>
+                <div className="row" style={{ marginTop: "8px" }}>
+                  {[10, 25, 50, 100].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      className="preset-button"
+                      onClick={() => setAmountXrp(String(preset))}
+                      disabled={loading}
+                    >
+                      {preset} XRP
+                    </button>
+                  ))}
+                </div>
                 <p className="hint" style={{ marginTop: '8px', fontSize: '11px' }}>
                   Pseudonymous by default. No donor identities stored.
+                </p>
+                <p className="hint" style={{ marginTop: '4px', fontSize: '11px' }}>
+                  Max donation: {MAX_DONATION_XRP} XRP.
                 </p>
               </div>
             </ParticleCard>
@@ -540,6 +630,51 @@ export default function App() {
                 <p className="magic-bento-card__description">
                   Verified and distributed to journalist
                 </p>
+              </div>
+            </ParticleCard>
+
+            {/* Card 7: Latest Donation */}
+            <ParticleCard
+              className="magic-bento-card magic-bento-card--text-autohide magic-bento-card--border-glow"
+              style={{ backgroundColor: '#060010' } as React.CSSProperties}
+              disableAnimations={shouldDisableAnimations}
+              particleCount={DEFAULT_PARTICLE_COUNT}
+              glowColor={DEFAULT_GLOW_COLOR}
+              enableTilt={false}
+              clickEffect={true}
+              enableMagnetism={false}
+            >
+              <div className="magic-bento-card__header">
+                <div className="magic-bento-card__label">Confirmation</div>
+                <StatusBadge status="locked" />
+              </div>
+              <div className="magic-bento-card__content" style={{ gap: "12px" }}>
+                {latestDonation ? (
+                  <>
+                    <h2 className="magic-bento-card__title">
+                      {latestDonation.amountXrp} XRP
+                    </h2>
+                    <div className="magic-bento-card__description">
+                      Funds locked in escrow
+                    </div>
+                    <div className="escrow-id">{latestDonation.escrowId}</div>
+                    {latestDonation.escrowCreateTx ? (
+                      <ExplorerLink
+                        txHash={latestDonation.escrowCreateTx}
+                        label="EscrowCreate Tx"
+                      />
+                    ) : (
+                      <div className="escrow-note">EscrowCreate tx pending</div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <h2 className="magic-bento-card__title">No Donation Yet</h2>
+                    <div className="magic-bento-card__description">
+                      Connect a wallet and donate to lock funds.
+                    </div>
+                  </>
+                )}
               </div>
             </ParticleCard>
 
