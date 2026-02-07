@@ -9,9 +9,9 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate }) => {
   return (
     <nav className="vertical-nav">
       <button
-        className={`nav-bubble ${currentView === 'campaign' ? 'active' : ''}`}
-        onClick={() => onNavigate('campaign')}
-        title="Campaign"
+        className={`nav-bubble ${currentView === 'dashboard' ? 'active' : ''}`}
+        onClick={() => onNavigate('dashboard')}
+        title="Dashboard"
       >
         <svg
           width="24"
@@ -29,10 +29,11 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate }) => {
       </button>
 
       <button
-        className={`nav-bubble ${currentView === 'dashboard' ? 'active' : ''}`}
-        onClick={() => onNavigate('dashboard')}
-        title="Dashboard"
+        className={`nav-bubble ${currentView === 'campaign' ? 'active' : ''}`}
+        onClick={() => onNavigate('campaign')}
+        title="Campaign"
       >
+        
         <svg
           width="24"
           height="24"

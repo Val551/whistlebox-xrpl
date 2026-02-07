@@ -115,7 +115,7 @@ const ProgressBar = ({ current, goal }: { current: number; goal: number }) => {
         {current} XRP raised of {goal} XRP goal ({percentage.toFixed(1)}%)
       </p>
     </div>
-  );
+  ); 
 };
 
 const Lifecycle = ({ status }: { status: "locked" | "released" | "pending" }) => {
@@ -394,20 +394,6 @@ export default function App() {
             gap: 8
           }}
         >
-          <button
-            onClick={() => setView("verifier")}
-            style={{
-              padding: "8px 12px",
-              background: "rgba(15, 10, 30, 0.9)",
-              color: "#e2e8f0",
-              border: "1px solid rgba(148, 163, 184, 0.3)",
-              borderRadius: 8,
-              cursor: "pointer",
-              fontSize: 12
-            }}
-          >
-            Verifier View
-          </button>
         </div>
 
         {/* Hero Header - Stays on Top */}
@@ -506,7 +492,7 @@ export default function App() {
               enableMagnetism={false}
             >
               <div className="magic-bento-card__header">
-                <div className="magic-bento-card__label">Support</div>
+                <div className="magic-bento-card__label">Support (MAX donation: 1000 XRP)</div>
               </div>
               <div className="magic-bento-card__content" style={{ gap: '16px' }}>
                 <h2 className="magic-bento-card__title">Donate (Test XRP)</h2>
@@ -515,27 +501,29 @@ export default function App() {
                   <div className="row">
                     <input
                       type="text"
-                      placeholder="r... (only stored locally)"
+                      placeholder="Wallet ID"
                       value={walletAddress}
                       onChange={(event) => setWalletAddress(event.target.value)}
                       disabled={walletConnected}
                       style={{ minWidth: "240px" }}
                     />
-                    {walletConnected ? (
+
+                    {walletConnected ? 
                       <button onClick={disconnectWallet} disabled={loading}>
                         Disconnect
                       </button>
-                    ) : (
+                     : 
                       <button onClick={connectWallet} disabled={loading}>
-                        Connect Wallet
+                        Connect
                       </button>
-                    )}
+                    }
+
                   </div>
-                  {walletConnected && (
-                    <div className="wallet-note">
-                      Connected: {walletAddress} — Only visible to you
-                    </div>
-                  )}
+                  {/* {walletConnected && (
+                    // <div className="wallet-note">
+                    //   Connected: {walletAddress} — Only visible to you
+                    // </div>
+                  )} */}
                   {walletStatus && (
                     <div className="wallet-status">{walletStatus}</div>
                   )}
@@ -565,12 +553,12 @@ export default function App() {
                     </button>
                   ))}
                 </div>
-                <p className="hint" style={{ marginTop: '8px', fontSize: '11px' }}>
+                {/* <p className="hint" style={{ marginTop: '8px', fontSize: '11px' }}>
                   Pseudonymous by default. No donor identities stored.
-                </p>
-                <p className="hint" style={{ marginTop: '4px', fontSize: '11px' }}>
+                </p> */}
+                {/* <p className="hint" style={{ marginTop: '4px', fontSize: '11px' }}>
                   Max donation: {MAX_DONATION_XRP} XRP.
-                </p>
+                </p> */}
               </div>
             </ParticleCard>
 
@@ -587,9 +575,12 @@ export default function App() {
                 enableMagnetism={false}
               >
                 <div className="magic-bento-card__header">
-                  <div className="magic-bento-card__label">Pending</div>
-                  <StatusBadge status={lockedEscrows[0].status} />
+                  <div>
+                    <div className="magic-bento-card__label">Pending</div>
+                    <StatusBadge status={lockedEscrows[0].status} />
+                  </div>
                 </div>
+
                 <div className="magic-bento-card__content" style={{ gap: '12px' }}>
                   <div>
                     <div className="escrow-id" style={{ fontSize: '11px', marginBottom: '6px' }}>
@@ -639,7 +630,7 @@ export default function App() {
               </ParticleCard>
             )}
 
-            {/* Card 5: Escrow Count */}
+            {/* Card 5: Journalist Proof */}
             <ParticleCard
               className="magic-bento-card magic-bento-card--text-autohide magic-bento-card--border-glow"
               style={{ backgroundColor: '#060010' } as React.CSSProperties}
@@ -651,11 +642,37 @@ export default function App() {
               enableMagnetism={false}
             >
               <div className="magic-bento-card__header">
-                <div className="magic-bento-card__label">Transparency</div>
-              </div>
-              <div className="magic-bento-card__content">
-                <h2 className="magic-bento-card__title">{lockedEscrows.length}</h2>
-                <p className="magic-bento-card__description">Active Escrows</p>
+                <div>
+                <div className="magic-bento-card__label">Journalist Proof</div>
+                  <StatusBadge status={latestReleased ? "released" : "pending"} />
+                </div>
+                </div>
+              <div className="magic-bento-card__content" style={{ gap: "12px" }}>
+                {latestReleased ? (
+                  <>
+                    <h2 className="magic-bento-card__title">
+                      {latestReleased.amountXrp} XRP Released
+                    </h2>
+                    {/* <div className="address-line">
+                      {campaign?.journalistAddress ?? "-"}
+                    </div> */}
+                    {latestReleased.escrowFinishTx ? (
+                      <ExplorerLink
+                        txHash={latestReleased.escrowFinishTx}
+                        label="Release Tx"
+                      />
+                    ) : (
+                      <div className="escrow-note">Release tx pending</div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <h2 className="magic-bento-card__title">No Releases Yet</h2>
+                    <div className="magic-bento-card__description">
+                      Funds release after verifier approval.
+                    </div>
+                  </>
+                )}
               </div>
             </ParticleCard>
 
@@ -674,11 +691,11 @@ export default function App() {
                 <div className="magic-bento-card__label">Released</div>
               </div>
               <div className="magic-bento-card__content">
-                <h2 className="magic-bento-card__title">{campaign?.totalReleasedXrp ?? "-"} XRP</h2>
+                <h2 className="magic-bento-card__title">{campaign?.totalReleasedXrp ?? "-"} XRP RELEASED</h2>
                 <p className="magic-bento-card__description">
                   Verified and distributed to journalist
                 </p>
-                <Lifecycle status={lifecycleStatus} />
+                {/* <Lifecycle status={lifecycleStatus} /> */}
               </div>
             </ParticleCard>
 
@@ -694,8 +711,10 @@ export default function App() {
               enableMagnetism={false}
             >
               <div className="magic-bento-card__header">
-                <div className="magic-bento-card__label">Confirmation</div>
-                <StatusBadge status="locked" />
+                <div>
+                  <div className="magic-bento-card__label">Confirmation</div>
+                  <StatusBadge status="locked" />
+                </div>
               </div>
               <div className="magic-bento-card__content" style={{ gap: "12px" }}>
                 {latestDonation ? (
@@ -727,10 +746,10 @@ export default function App() {
               </div>
             </ParticleCard>
 
-            {/* Card 8: Journalist Proof */}
+            {/* Card 8: Escrow Count */}
             <ParticleCard
               className="magic-bento-card magic-bento-card--text-autohide magic-bento-card--border-glow"
-              style={{ backgroundColor: '#060010' } as React.CSSProperties}
+              style={{ backgroundColor: '#060010'} as React.CSSProperties}
               disableAnimations={shouldDisableAnimations}
               particleCount={DEFAULT_PARTICLE_COUNT}
               glowColor={DEFAULT_GLOW_COLOR}
@@ -739,45 +758,17 @@ export default function App() {
               enableMagnetism={false}
             >
               <div className="magic-bento-card__header">
-                <div className="magic-bento-card__label">Journalist Proof</div>
-                <StatusBadge status={latestReleased ? "released" : "pending"} />
+                <div className="magic-bento-card__label">Transparency</div>
               </div>
-              <div className="magic-bento-card__content" style={{ gap: "12px" }}>
-                {latestReleased ? (
-                  <>
-                    <h2 className="magic-bento-card__title">
-                      {latestReleased.amountXrp} XRP Released
-                    </h2>
-                    <div className="magic-bento-card__description">
-                      Funds delivered to journalist wallet
-                    </div>
-                    <div className="address-line">
-                      {campaign?.journalistAddress ?? "-"}
-                    </div>
-                    {latestReleased.escrowFinishTx ? (
-                      <ExplorerLink
-                        txHash={latestReleased.escrowFinishTx}
-                        label="Release Tx"
-                      />
-                    ) : (
-                      <div className="escrow-note">Release tx pending</div>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <h2 className="magic-bento-card__title">No Releases Yet</h2>
-                    <div className="magic-bento-card__description">
-                      Funds release after verifier approval.
-                    </div>
-                  </>
-                )}
+              <div className="magic-bento-card__content">
+                <h2 className="magic-bento-card__title">{lockedEscrows.length}</h2>
+                <p className="magic-bento-card__description">Active Escrows</p>
               </div>
             </ParticleCard>
-
             {/* Card 7: Key Addresses */}
             <ParticleCard
               className="magic-bento-card magic-bento-card--text-autohide magic-bento-card--border-glow"
-              style={{ backgroundColor: '#060010' } as React.CSSProperties}
+              style={{ backgroundColor: '#060010',  minWidth: "200px", maxHeight: "200px", gridColumn: "span 2"} as React.CSSProperties}
               disableAnimations={shouldDisableAnimations}
               particleCount={DEFAULT_PARTICLE_COUNT}
               glowColor={DEFAULT_GLOW_COLOR}
@@ -788,7 +779,7 @@ export default function App() {
               <div className="magic-bento-card__header">
                 <div className="magic-bento-card__label">Accountability</div>
               </div>
-              <div className="magic-bento-card__content" style={{ gap: "12px" }}>
+              <div className="magic-bento-card__content" style={{ gap: "12px"}}>
                 <div>
                   <div className="magic-bento-card__description">Journalist wallet</div>
                   <div className="address-line">{campaign?.journalistAddress ?? "-"}</div>

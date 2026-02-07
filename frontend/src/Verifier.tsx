@@ -289,7 +289,7 @@ export default function Verifier() {
                 <p className="magic-bento-card__description">All Escrows</p>
               </div>
             </ParticleCard>
-
+ 
             <ParticleCard
               className="magic-bento-card magic-bento-card--text-autohide magic-bento-card--border-glow"
               style={{ backgroundColor: "#060010" } as React.CSSProperties}

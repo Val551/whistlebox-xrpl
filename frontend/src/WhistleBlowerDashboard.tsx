@@ -301,50 +301,10 @@ export default function WhistleblowerDashboard() {
               </div>
             </ParticleCard>
 
-            {/* Total Locked */}
+            {/* New Campaign */}
             <ParticleCard
               className="magic-bento-card magic-bento-card--text-autohide magic-bento-card--border-glow"
-              style={{ backgroundColor: "#060010" } as React.CSSProperties}
-              disableAnimations={shouldDisableAnimations}
-              particleCount={DEFAULT_PARTICLE_COUNT}
-              glowColor={DEFAULT_GLOW_COLOR}
-              enableTilt={false}
-              clickEffect={true}
-              enableMagnetism={false}
-            >
-              <div className="magic-bento-card__header">
-                <div className="magic-bento-card__label">Locked</div>
-              </div>
-              <div className="magic-bento-card__content">
-                <h2 className="magic-bento-card__title">{totalStats.locked} XRP</h2>
-                <p className="magic-bento-card__description">In Escrow</p>
-              </div>
-            </ParticleCard>
-
-            {/* Total Released */}
-            <ParticleCard
-              className="magic-bento-card magic-bento-card--text-autohide magic-bento-card--border-glow"
-              style={{ backgroundColor: "#060010" } as React.CSSProperties}
-              disableAnimations={shouldDisableAnimations}
-              particleCount={DEFAULT_PARTICLE_COUNT}
-              glowColor={DEFAULT_GLOW_COLOR}
-              enableTilt={false}
-              clickEffect={true}
-              enableMagnetism={false}
-            >
-              <div className="magic-bento-card__header">
-                <div className="magic-bento-card__label">Released</div>
-              </div>
-              <div className="magic-bento-card__content">
-                <h2 className="magic-bento-card__title">{totalStats.released} XRP</h2>
-                <p className="magic-bento-card__description">Verified Payouts</p>
-              </div>
-            </ParticleCard>
-
-            {/* Create Campaign Button */}
-            <ParticleCard
-              className="magic-bento-card magic-bento-card--text-autohide magic-bento-card--border-glow"
-              style={{ backgroundColor: "#060010", gridColumn: "1 / -1" } as React.CSSProperties}
+              style={{ backgroundColor: "#060010", minHeight: "550px"} as React.CSSProperties}
               disableAnimations={shouldDisableAnimations}
               particleCount={DEFAULT_PARTICLE_COUNT}
               glowColor={DEFAULT_GLOW_COLOR}
@@ -366,6 +326,26 @@ export default function WhistleblowerDashboard() {
                 >
                   {showCreateForm ? "Cancel" : "Create New Campaign"}
                 </button>
+              </div>
+            </ParticleCard>
+
+            {/* Total Released */}
+            <ParticleCard
+              className="magic-bento-card magic-bento-card--text-autohide magic-bento-card--border-glow"
+              style={{ backgroundColor: "#060010" } as React.CSSProperties}
+              disableAnimations={shouldDisableAnimations}
+              particleCount={DEFAULT_PARTICLE_COUNT}
+              glowColor={DEFAULT_GLOW_COLOR}
+              enableTilt={false}
+              clickEffect={true}
+              enableMagnetism={false}
+            >
+              <div className="magic-bento-card__header">
+                <div className="magic-bento-card__label">Released</div>
+              </div>
+              <div className="magic-bento-card__content">
+                <h2 className="magic-bento-card__title">{totalStats.released} XRP</h2>
+                <p className="magic-bento-card__description">Verified Payouts</p>
               </div>
             </ParticleCard>
           </BentoCardGrid>
@@ -494,7 +474,7 @@ export default function WhistleblowerDashboard() {
                       <div style={{ marginTop: "8px", fontSize: "12px", color: "#64748b" }}>
                         Campaign ID: {campaign.id}
                       </div>
-                    </div>
+                    </div> 
                   </div>
 
                   <div className="stats" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))" }}>
@@ -543,19 +523,6 @@ export default function WhistleblowerDashboard() {
                 </li>
               ))}
             </ul>
-          </section>
-        )}
-
-        {/* Empty State */}
-        {campaigns.length === 0 && !showCreateForm && !loading && (
-          <section className="panel" style={{ marginTop: "24px", textAlign: "center", padding: "48px 24px" }}>
-            <h2 style={{ marginBottom: "12px" }}>No Campaigns Yet</h2>
-            <p style={{ color: "#94a3b8", marginBottom: "24px" }}>
-              Create your first transparent funding campaign to get started.
-            </p>
-            <button onClick={() => setShowCreateForm(true)}>
-              Create Your First Campaign
-            </button>
           </section>
         )}
       </div>

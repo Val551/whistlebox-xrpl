@@ -6,6 +6,7 @@ export const campaign = {
   description: "Funding an investigative series into city hall procurement practices.",
   journalistAddress: "rJOURNALISTADDRESS...",
   verifierAddress: "rVERIFIERADDRESS...",
+  goalXrp: 500, 
   totalRaisedXrp: 150.5,
   totalLockedXrp: 120.5,
   totalReleasedXrp: 30.0,

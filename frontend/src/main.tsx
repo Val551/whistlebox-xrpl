@@ -20,7 +20,7 @@ type HealthState = {
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3001";
 
 function Router() {
-  const [currentView, setCurrentView] = useState<'campaign' | 'verifier' | 'dashboard'>('campaign');
+  const [currentView, setCurrentView] = useState<'campaign' | 'verifier' | 'dashboard'>('dashboard');
   const [health, setHealth] = useState<HealthState>({
     mode: "unknown",
     network: "unknown",
