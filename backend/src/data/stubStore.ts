@@ -17,12 +17,14 @@ const state: {
   donations: Donation[];
   escrowCounter: number;
   donationCounter: number;
+  verifierWhitelist: Map<string, Set<string>>; // campaignId -> Set of verifier addresses
 } = {
   campaign: { ...baseCampaign },
   escrows: escrows.map((escrow) => ({ ...escrow })),
   donations: donations.map((donation) => ({ ...donation })),
   escrowCounter: escrows.length,
-  donationCounter: donations.length
+  donationCounter: donations.length,
+  verifierWhitelist: new Map()
 };
 
 // Helper to generate stable, padded IDs like donation-0003 or escrow-0012.
@@ -164,4 +166,36 @@ export const approveEscrow = (incomingCampaignId: string, escrowId: string) => {
   }
 
   return releaseEscrow(escrowId);
+};
+
+// Checks if a verifier address is whitelisted for a campaign.
+export const isVerifierWhitelisted = (address: string, incomingCampaignId: string): boolean => {
+  const whitelist = state.verifierWhitelist.get(incomingCampaignId);
+  return whitelist ? whitelist.has(address) : false;
+};
+
+// Returns all whitelisted verifier addresses for a campaign.
+export const listWhitelistedVerifiers = (incomingCampaignId: string): string[] => {
+  const whitelist = state.verifierWhitelist.get(incomingCampaignId);
+  return whitelist ? Array.from(whitelist) : [];
+};
+
+// Adds a verifier address to the campaign whitelist.
+export const addVerifierToWhitelist = (address: string, incomingCampaignId: string): void => {
+  let whitelist = state.verifierWhitelist.get(incomingCampaignId);
+  if (!whitelist) {
+    whitelist = new Set();
+    state.verifierWhitelist.set(incomingCampaignId, whitelist);
+  }
+  whitelist.add(address);
+};
+
+// Removes a verifier address from the campaign whitelist.
+// Returns true if the address was removed, false if it wasn't in the whitelist.
+export const removeVerifierFromWhitelist = (address: string, incomingCampaignId: string): boolean => {
+  const whitelist = state.verifierWhitelist.get(incomingCampaignId);
+  if (!whitelist) {
+    return false;
+  }
+  return whitelist.delete(address);
 };

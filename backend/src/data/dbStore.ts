@@ -367,3 +367,42 @@ export const approveEscrow = (campaignId: string, escrowId: string) => {
   return releaseEscrow(escrowId);
 };
 
+<<<<<<< HEAD
+=======
+// Checks if a verifier address is whitelisted for a campaign.
+export const isVerifierWhitelisted = (address: string, campaignId: string): boolean => {
+  const db = getDb();
+  const result = db
+    .prepare("SELECT COUNT(*) as count FROM verifier_whitelist WHERE campaignId = ? AND verifierAddress = ?")
+    .get(campaignId, address) as { count: number };
+  return result.count > 0;
+};
+
+// Returns all whitelisted verifier addresses for a campaign.
+export const listWhitelistedVerifiers = (campaignId: string): string[] => {
+  const db = getDb();
+  const rows = db
+    .prepare("SELECT verifierAddress FROM verifier_whitelist WHERE campaignId = ? ORDER BY addedAt")
+    .all(campaignId) as Array<{ verifierAddress: string }>;
+  return rows.map(row => row.verifierAddress);
+};
+
+// Adds a verifier address to the campaign whitelist.
+export const addVerifierToWhitelist = (address: string, campaignId: string): void => {
+  const db = getDb();
+  const addedAt = new Date().toISOString();
+  db.prepare(
+    "INSERT OR IGNORE INTO verifier_whitelist (campaignId, verifierAddress, addedAt) VALUES (?, ?, ?)"
+  ).run(campaignId, address, addedAt);
+};
+
+// Removes a verifier address from the campaign whitelist.
+// Returns true if the address was removed, false if it wasn't in the whitelist.
+export const removeVerifierFromWhitelist = (address: string, campaignId: string): boolean => {
+  const db = getDb();
+  const result = db
+    .prepare("DELETE FROM verifier_whitelist WHERE campaignId = ? AND verifierAddress = ?")
+    .run(campaignId, address);
+  return result.changes > 0;
+};
+>>>>>>> a3140bd21665a34bc351e134316dfa3d5dc6efe0
