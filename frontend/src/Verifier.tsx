@@ -29,6 +29,7 @@ const EXPLORER_BASE =
     ? "https://devnet.xrpl.org/transactions"
     : "https://testnet.xrpl.org/transactions");
 const EXPLORER_LABEL = XRPL_NETWORK === "devnet" ? "Devnet" : "Testnet";
+const XRPL_TX_HASH_REGEX = /^[A-F0-9]{64}$/i;
 
 const DEFAULT_PARTICLE_COUNT = 12;
 const DEFAULT_SPOTLIGHT_RADIUS = 400;
@@ -73,11 +74,12 @@ const StatusBadge = ({ status }: { status: string }) => {
 };
 
 const ExplorerLink = ({ txHash, label }: { txHash: string; label?: string }) => {
-  if (!txHash) return null;
+  const normalizedHash = txHash.trim();
+  if (!XRPL_TX_HASH_REGEX.test(normalizedHash)) return null;
 
   return (
     <a
-      href={`${EXPLORER_BASE}/${txHash}`}
+      href={`${EXPLORER_BASE}/${normalizedHash}`}
       target="_blank"
       rel="noopener noreferrer"
       className="explorer-link"
@@ -149,7 +151,8 @@ export default function Verifier() {
     try {
       const res = await fetch(`${API_BASE}/api/escrows/${escrowId}/release`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" }
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId: `release:${escrowId}` })
       });
 
       if (!res.ok) {
@@ -306,26 +309,26 @@ export default function Verifier() {
                   <StatusBadge status={verifierMatch ? "verified" : "locked"} />
                 )}
               </div>
-              <div className="magic-bento-card__content" style={{ gap: "12px" }}>
+              <div className="magic-bento-card__content" style={{ gap: "0.5em" }}>
                 <div className="magic-bento-card__description">
                   Address on record:
                 </div>
-                <div className="address-line">{campaign?.verifierAddress ?? "-"}</div>
-                <div className="row">
+                <div className="address-line" style={{ marginBottom: "0.75em" }}>{campaign?.verifierAddress ?? "-"}</div>
+                <div className="row" style={{ gap: "6px", flexWrap: "nowrap" }}>
                   <input
                     type="text"
                     placeholder="r... (only stored locally)"
                     value={walletAddress}
                     onChange={(event) => setWalletAddress(event.target.value)}
                     disabled={walletConnected}
-                    style={{ minWidth: "240px" }}
+                    style={{ flex: 1, minWidth: 0, width: "auto" }}
                   />
                   {walletConnected ? (
-                    <button onClick={disconnectWallet} disabled={loading}>
+                    <button onClick={disconnectWallet} disabled={loading} style={{ padding: "6px 12px", fontSize: "12px", whiteSpace: "nowrap" }}>
                       Disconnect
                     </button>
                   ) : (
-                    <button onClick={connectWallet} disabled={loading}>
+                    <button onClick={connectWallet} disabled={loading} style={{ padding: "6px 12px", fontSize: "12px", whiteSpace: "nowrap" }}>
                       Connect
                     </button>
                   )}
@@ -374,8 +377,7 @@ export default function Verifier() {
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <circle cx="12" cy="12" r="10" />
                             <polyline points="12 6 12 12 16 14" />
-                          </svg>
-                          Pending
+                          </svg>Pending
                         </span>
                       </div>
                     </div>

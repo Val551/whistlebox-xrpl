@@ -2,7 +2,11 @@ import { Router } from "express";
 import { Client, Wallet, type EscrowFinish } from "xrpl";
 import { STUB_MODE } from "../config.js";
 import {
+  clearEscrowReleaseRequest as clearEscrowReleaseRequestDb,
+  completeEscrowReleaseRequest as completeEscrowReleaseRequestDb,
+  createEscrowReleaseRequest as createEscrowReleaseRequestDb,
   getEscrowById as getEscrowByIdDb,
+  getEscrowReleaseRequest as getEscrowReleaseRequestDb,
   listEscrows as listEscrowsDb,
   releaseEscrow as releaseEscrowDb
 } from "../data/dbStore.js";
@@ -33,6 +37,9 @@ router.get("/", (_req, res) => {
 // Releases an escrow in stub mode and returns the updated escrow payload.
 router.post("/:id/release", async (req, res) => {
   const { id } = req.params;
+  const incomingRequestId =
+    typeof req.body?.requestId === "string" ? req.body.requestId.trim() : "";
+  const requestId = incomingRequestId.length > 0 ? incomingRequestId : `release:${id}`;
 
   if (STUB_MODE) {
     const result = releaseEscrowStub(id);
@@ -79,6 +86,31 @@ router.post("/:id/release", async (req, res) => {
   const wallet = Wallet.fromSeed(verifierSeed);
   const client = new Client(xrplWss);
 
+  const existingRequest = getEscrowReleaseRequestDb(requestId);
+  if (existingRequest) {
+    if (existingRequest.status === "completed") {
+      return conflict(res, "Duplicate release request", {
+        requestId,
+        escrowId: existingRequest.escrowId,
+        finishTx: existingRequest.finishTx
+      });
+    }
+    return conflict(res, "Release request already in progress", {
+      requestId,
+      escrowId: existingRequest.escrowId
+    });
+  }
+
+  const inserted = createEscrowReleaseRequestDb(requestId, id);
+  if (!inserted) {
+    const current = getEscrowReleaseRequestDb(requestId);
+    return conflict(res, "Duplicate release request", {
+      requestId,
+      escrowId: current?.escrowId ?? id,
+      finishTx: current?.finishTx ?? null
+    });
+  }
+
   try {
     await client.connect();
     const tx: EscrowFinish = {
@@ -112,16 +144,20 @@ router.post("/:id/release", async (req, res) => {
 
     const result = releaseEscrowDb(id, { finishTx: String(txResult.hash) });
     if (!result) {
+      clearEscrowReleaseRequestDb(requestId);
       return notFound(res, "Escrow not found");
     }
+    completeEscrowReleaseRequestDb(requestId, result.finishTx);
 
     return res.json({
       message: "Escrow released on XRPL",
       escrowId: id,
+      requestId,
       finishTx: result.finishTx,
       escrow: result.escrow
     });
   } catch (error) {
+    clearEscrowReleaseRequestDb(requestId);
     return res.status(500).json({
       error: error instanceof Error ? error.message : "Escrow release failed"
     });

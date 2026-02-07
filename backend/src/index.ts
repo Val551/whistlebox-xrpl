@@ -6,12 +6,17 @@ import donationsRouter from "./routes/donations.js";
 import escrowsRouter from "./routes/escrows.js";
 import { STUB_MODE } from "./config.js";
 import { getDb } from "./db.js";
+import { validateXrplSigningConfig } from "./xrplSigningConfig.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 3001);
 
 // Initializes SQLite when not running in stub mode.
 if (!STUB_MODE) {
+  const { custodyAddress, verifierAddress } = validateXrplSigningConfig();
+  console.log(
+    `[XRPL_SIGNING_CONFIG] validated custody=${custodyAddress} verifier=${verifierAddress}`
+  );
   getDb();
 }
 

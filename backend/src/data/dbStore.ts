@@ -46,6 +46,15 @@ type DonationRow = {
   status: "received" | "escrowed" | "failed";
 };
 
+type EscrowReleaseRequestRow = {
+  requestId: string;
+  escrowId: string;
+  status: "in_progress" | "completed";
+  finishTx: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 // Helper to generate stable, padded IDs like donation-0003 or escrow-0012.
 // IDs remain human-readable for demo clarity.
 const formatId = (prefix: string, counter: number) =>
@@ -100,6 +109,45 @@ export const getEscrowById = (escrowId: string) => {
   return db
     .prepare("SELECT * FROM escrows WHERE id = ?")
     .get(escrowId) as EscrowRow | undefined;
+};
+
+// Fetches an escrow release idempotency record by requestId.
+export const getEscrowReleaseRequest = (requestId: string) => {
+  const db = getDb();
+  return db
+    .prepare("SELECT * FROM escrow_release_requests WHERE requestId = ?")
+    .get(requestId) as EscrowReleaseRequestRow | undefined;
+};
+
+// Creates an in-progress release request record.
+// Returns false when the requestId already exists (duplicate/replay).
+export const createEscrowReleaseRequest = (requestId: string, escrowId: string) => {
+  const db = getDb();
+  const now = new Date().toISOString();
+  const result = db
+    .prepare(
+      "INSERT OR IGNORE INTO escrow_release_requests (requestId, escrowId, status, finishTx, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?)"
+    )
+    .run(requestId, escrowId, "in_progress", null, now, now);
+  return result.changes > 0;
+};
+
+// Marks a release request as completed and stores finish transaction correlation.
+export const completeEscrowReleaseRequest = (requestId: string, finishTx: string) => {
+  const db = getDb();
+  const now = new Date().toISOString();
+  db.prepare(
+    "UPDATE escrow_release_requests SET status = ?, finishTx = ?, updatedAt = ? WHERE requestId = ?"
+  ).run("completed", finishTx, now, requestId);
+};
+
+// Clears an in-progress release request when submission fails before completion.
+export const clearEscrowReleaseRequest = (requestId: string) => {
+  const db = getDb();
+  db.prepare("DELETE FROM escrow_release_requests WHERE requestId = ? AND status = ?").run(
+    requestId,
+    "in_progress"
+  );
 };
 
 // Finds an existing donation by its client-supplied paymentTx for idempotency checks.
