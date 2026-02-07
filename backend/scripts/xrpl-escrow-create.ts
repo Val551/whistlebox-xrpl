@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { Client, Wallet, isoTimeToRippleTime, type EscrowCreate } from "xrpl";
+import { Client, Wallet, isoTimeToRippleTime, xrpToDrops, type EscrowCreate } from "xrpl";
 
 function readEnv(name: string): string | undefined {
   const value = process.env[name]?.trim();
@@ -29,11 +29,11 @@ type EscrowCreateReport = {
 };
 
 function toDropsFromXrp(xrpAmount: string): string {
-  const value = Number(xrpAmount);
-  if (!Number.isFinite(value) || value <= 0) {
+  try {
+    return xrpToDrops(xrpAmount);
+  } catch {
     throw new Error(`Invalid XRPL_ESCROW_AMOUNT_XRP value: ${xrpAmount}`);
   }
-  return String(Math.round(value * 1_000_000));
 }
 
 async function runEscrowCreate(assertMode: boolean): Promise<EscrowCreateReport> {
