@@ -1,15 +1,12 @@
 import { Router } from "express";
 import { STUB_MODE } from "../config.js";
-import { createDonation } from "../data/stubStore.js";
+import { createDonation as createDonationDb } from "../data/dbStore.js";
+import { createDonation as createDonationStub } from "../data/stubStore.js";
 
 const router = Router();
 
-// Accepts a donation intent and returns a stubbed donation payload plus identifiers.
+// Accepts a donation intent and returns a donation payload plus identifiers.
 router.post("/", (req, res) => {
-  if (!STUB_MODE) {
-    return res.status(501).json({ error: "DB mode not implemented yet" });
-  }
-
   const { campaignId: incomingCampaignId, amountXrp } = req.body ?? {};
 
   if (!incomingCampaignId) {
@@ -21,7 +18,9 @@ router.post("/", (req, res) => {
   }
 
   const normalizedAmount = Number(amountXrp);
-  const result = createDonation(incomingCampaignId, normalizedAmount);
+  const result = STUB_MODE
+    ? createDonationStub(incomingCampaignId, normalizedAmount)
+    : createDonationDb(incomingCampaignId, normalizedAmount);
   if (!result) {
     return res.status(400).json({ error: "Invalid campaignId" });
   }

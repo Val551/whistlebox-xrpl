@@ -1,26 +1,20 @@
 import { Router } from "express";
 import { STUB_MODE } from "../config.js";
-import { listEscrows, releaseEscrow } from "../data/stubStore.js";
+import { listEscrows as listEscrowsDb, releaseEscrow as releaseEscrowDb } from "../data/dbStore.js";
+import { listEscrows as listEscrowsStub, releaseEscrow as releaseEscrowStub } from "../data/stubStore.js";
 
 const router = Router();
 
 // Returns full escrow records for verifier and audit views.
 router.get("/", (_req, res) => {
-  if (!STUB_MODE) {
-    return res.status(501).json({ error: "DB mode not implemented yet" });
-  }
-
-  return res.json({ escrows: listEscrows() });
+  const escrows = STUB_MODE ? listEscrowsStub() : listEscrowsDb();
+  return res.json({ escrows });
 });
 
 // Releases an escrow in stub mode and returns the updated escrow payload.
 router.post("/:id/release", (req, res) => {
-  if (!STUB_MODE) {
-    return res.status(501).json({ error: "DB mode not implemented yet" });
-  }
-
   const { id } = req.params;
-  const result = releaseEscrow(id);
+  const result = STUB_MODE ? releaseEscrowStub(id) : releaseEscrowDb(id);
   if (!result) {
     return res.status(404).json({ error: "Escrow not found" });
   }
