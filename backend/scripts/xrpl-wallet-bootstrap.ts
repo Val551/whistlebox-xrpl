@@ -103,33 +103,38 @@ async function ensureFundedSeedWallet(
 async function ensureJournalistWallet(
   client: Client,
   faucetUrl: string,
+  journalistSeed: string | undefined,
   journalistAddress: string | undefined,
 ): Promise<RoleStatus> {
-  let address = journalistAddress;
+  let address: string;
   let usedExistingCredentials = true;
   let generatedSeed: string | undefined;
   let funded = false;
 
-  if (address && !isValidClassicAddress(address)) {
-    throw new Error("JOURNALIST_WALLET_ADDRESS is not a valid XRPL classic address.");
-  }
-
-  if (!address) {
+  // Priority: seed > address > generate new
+  if (journalistSeed) {
+    const wallet = Wallet.fromSeed(journalistSeed);
+    address = wallet.classicAddress;
+  } else if (journalistAddress) {
+    if (!isValidClassicAddress(journalistAddress)) {
+      throw new Error("JOURNALIST_WALLET_ADDRESS is not a valid XRPL classic address.");
+    }
+    address = journalistAddress;
+  } else {
     const fundedWallet = await client.fundWallet();
     address = fundedWallet.wallet.classicAddress;
     generatedSeed = fundedWallet.wallet.seed;
     usedExistingCredentials = false;
     funded = true;
-  } else {
+  }
+
+  // If we have an address but haven't funded yet, check balance and fund if needed
+  if (!funded) {
     const balance = await getBalance(client, address);
     if (balance < 10) {
       await fundAddressWithFaucet(faucetUrl, address, 1000);
       funded = true;
     }
-  }
-
-  if (!address) {
-    throw new Error("Journalist wallet address resolution failed.");
   }
 
   const balanceXrp = await getBalance(client, address);
@@ -156,10 +161,11 @@ async function main(): Promise<void> {
   try {
     const custodySeed = readEnv("CUSTODY_WALLET_SEED");
     const verifierSeed = readEnv("VERIFIER_WALLET_SEED");
+    const journalistSeed = readEnv("JOURNALIST_WALLET_SEED");
     const journalistAddress = readEnv("JOURNALIST_WALLET_ADDRESS");
 
     const custody = await ensureFundedSeedWallet(client, "custody", custodySeed);
-    const journalist = await ensureJournalistWallet(client, faucetUrl, journalistAddress);
+    const journalist = await ensureJournalistWallet(client, faucetUrl, journalistSeed, journalistAddress);
     const verifier = await ensureFundedSeedWallet(client, "verifier", verifierSeed);
     const roles: RoleStatus[] = [custody, journalist, verifier];
 
