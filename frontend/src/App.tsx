@@ -200,8 +200,8 @@ export default function App() {
       const campaignList = data.campaigns || data || [];
       setCampaigns(Array.isArray(campaignList) ? campaignList : []);
       
-      // If campaigns loaded but selected campaign not found, select first one
-      if (campaignList.length > 0 && !campaignList.find((c: Campaign) => c.id === selectedCampaignId)) {
+      // Auto-select first campaign if available and nothing is selected
+      if (campaignList.length > 0 && !selectedCampaignId) {
         setSelectedCampaignId(campaignList[0].id);
       }
     } catch (error) {
@@ -211,7 +211,12 @@ export default function App() {
 
   // Reload campaign data based on selected campaign
   const reloadData = async () => {
-    const campaignToLoad = selectedCampaignId || CAMPAIGN_ID;
+    if (!selectedCampaignId) {
+      setCampaign(null);
+      setEscrows([]);
+      return;
+    }
+    const campaignToLoad = selectedCampaignId;
     try {
       const [campaignRes, escrowsRes] = await Promise.all([
         fetch(`${API_BASE}/api/campaigns/${campaignToLoad}`),
@@ -496,7 +501,7 @@ export default function App() {
 
           <h1>{campaign?.title ?? "Loading campaign..."}</h1>
           <p className="subtitle">
-            {campaign?.description ?? "Glass-box funding for investigative journalism."}
+            {campaign?.description}
           </p>
 
           {/* Progress Bar */}

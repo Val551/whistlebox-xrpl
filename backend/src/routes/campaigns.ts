@@ -18,9 +18,8 @@ const router = Router();
 // Returns all campaigns for list views.
 router.get("/", (req, res) => {
   if (STUB_MODE) {
-    // In stub mode, return the single stub campaign
-    const campaign = getCampaignSummaryStub("cityhall-001");
-    return res.json(campaign ? [campaign] : []);
+    // Return empty campaigns list in stub mode
+    return res.json({ campaigns: [] });
   }
 
   const campaigns = listCampaignsDb();
@@ -82,12 +81,14 @@ router.post("/:id/escrows/:escrowId/approve", requireVerifierAuth, (req, res) =>
     return conflict(res, "Escrow already released");
   }
 
+  const { finishTx, escrow } = result;
+  
   return res.json({
-    message: "Escrow approved and released (stub mode)",
+    message: "Escrow approved and released",
     campaignId: id,
     escrowId,
-    finishTx: result.finishTx,
-    escrow: result.escrow
+    finishTx,
+    escrow
   });
 });
 

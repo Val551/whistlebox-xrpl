@@ -50,7 +50,7 @@ type EscrowReleaseRequestRow = {
   requestId: string;
   escrowId: string;
   status: "in_progress" | "completed";
-  finishTx: string | null;
+  finishTx: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -236,7 +236,7 @@ export const createDonation = (
   const donationId = formatId("donation", nextSequence("donations"));
   const escrowId = formatId("escrow", nextSequence("escrows"));
   const createdAt = new Date().toISOString();
-  const finishAfter = escrowMeta?.finishAfter ?? new Date(Date.now() + 60 * 60 * 1000).toISOString();
+  const finishAfter = escrowMeta?.finishAfter ?? new Date(Date.now() - 1000).toISOString();
   const uniquePaymentTx = paymentTx;
   const escrowCreateTx = escrowMeta?.escrowCreateTx ?? `DB-CREATE-TX-${escrowId}`;
   const ownerAddress = escrowMeta?.ownerAddress ?? "rCUSTODYADDRESS...";

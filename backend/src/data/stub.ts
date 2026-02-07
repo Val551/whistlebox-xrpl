@@ -2,8 +2,8 @@ export const campaignId = "cityhall-001";
 
 export const campaign = {
   id: campaignId,
-  title: "City Hall Contracts Investigation",
-  description: "Funding an investigative series into city hall procurement practices.",
+  title: "NO Campaign Created",
+  description: "Please Create a Campaign First",
   journalistAddress: "rJOURNALISTADDRESS...",
   verifierAddress: "rGk73CbmbdwDA8E7yQLvjP8jZhsxAaT6tC",
   goalXrp: 500, 

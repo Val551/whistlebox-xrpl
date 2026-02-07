@@ -26,91 +26,91 @@ async function runMigration(): Promise<void> {
   }
 
   // Create 3 sample campaigns
-  const campaigns = [
-    {
-      id: "cityhall-001",
-      title: "City Hall Contracts Investigation",
-      description: "Funding an investigative series into city hall procurement practices.",
-      journalistAddress: journalistWalletAddress,
-      verifierAddress: verifierWalletAddress,
-      goalXrp: 100,
-    },
-    {
-      id: "school-board-001",
-      title: "School Board Corruption Investigation",
-      description: "Exposing financial irregularities and bid-rigging in school board contracts.",
-      journalistAddress: journalistWalletAddress,
-      verifierAddress: verifierWalletAddress,
-      goalXrp: 150,
-    },
-    {
-      id: "environmental-001",
-      title: "Environmental Violations Investigation",
-      description: "Investigating illegal dumping and environmental code violations by local industries.",
-      journalistAddress: journalistWalletAddress,
-      verifierAddress: verifierWalletAddress,
-      goalXrp: 120,
-    },
-  ];
+//   const campaigns = [
+//     {
+//       id: "cityhall-001",
+//       title: "City Hall Contracts Investigation",
+//       description: "Funding an investigative series into city hall procurement practices.",
+//       journalistAddress: journalistWalletAddress,
+//       verifierAddress: verifierWalletAddress,
+//       goalXrp: 100,
+//     },
+//     {
+//       id: "school-board-001",
+//       title: "School Board Corruption Investigation",
+//       description: "Exposing financial irregularities and bid-rigging in school board contracts.",
+//       journalistAddress: journalistWalletAddress,
+//       verifierAddress: verifierWalletAddress,
+//       goalXrp: 150,
+//     },
+//     {
+//       id: "environmental-001",
+//       title: "Environmental Violations Investigation",
+//       description: "Investigating illegal dumping and environmental code violations by local industries.",
+//       journalistAddress: journalistWalletAddress,
+//       verifierAddress: verifierWalletAddress,
+//       goalXrp: 120,
+//     },
+//   ];
 
-  for (const campaign of campaigns) {
-    const created = createCampaign(campaign);
-    if (created) {
-      console.log(`✓ Created campaign: ${campaign.id}`);
-    } else {
-      console.log(`→ Campaign already exists: ${campaign.id}`);
-    }
-  }
+//   for (const campaign of campaigns) {
+//     const created = createCampaign(campaign);
+//     if (created) {
+//       console.log(`✓ Created campaign: ${campaign.id}`);
+//     } else {
+//       console.log(`→ Campaign already exists: ${campaign.id}`);
+//     }
+//   }
 
-  console.log("");
-  console.log("Creating test escrows...");
+//   console.log("");
+//   console.log("Creating test escrows...");
 
-  // Helper to create test escrows with different amounts
-  const createTestEscrow = (
-    campaignId: string,
-    amountXrp: number,
-    index: number,
-    txHash?: string
-  ) => {
-    const paymentTx = txHash || `payment-${campaignId}-${index}-${Date.now()}`;
-    const finishAfter = new Date(Date.now() + 3 * 60 * 1000).toISOString(); // 3 minutes from now
+//   // Helper to create test escrows with different amounts
+//   const createTestEscrow = (
+//     campaignId: string,
+//     amountXrp: number,
+//     index: number,
+//     txHash?: string
+//   ) => {
+//     const paymentTx = txHash || `payment-${campaignId}-${index}-${Date.now()}`;
+//     const finishAfter = new Date(Date.now() - 1000).toISOString(); // 1 second in the past for immediate release
 
-    const result = createDonation(
-      campaignId,
-      amountXrp,
-      paymentTx,
-      txHash
-        ? {
-            escrowCreateTx: txHash,
-            ownerAddress: escrowOwnerAddress || custodyWalletAddress || "rCUSTODYADDRESS...",
-            destinationAddress: journalistWalletAddress,
-            finishAfter,
-            offerSequence: escrowOfferSequence ? Number(escrowOfferSequence) : undefined,
-            createEngineResult: "tesSUCCESS",
-          }
-        : undefined
-    );
+//     const result = createDonation(
+//       campaignId,
+//       amountXrp,
+//       paymentTx,
+//       txHash
+//         ? {
+//             escrowCreateTx: txHash,
+//             ownerAddress: escrowOwnerAddress || custodyWalletAddress || "rCUSTODYADDRESS...",
+//             destinationAddress: journalistWalletAddress,
+//             finishAfter,
+//             offerSequence: escrowOfferSequence ? Number(escrowOfferSequence) : undefined,
+//             createEngineResult: "tesSUCCESS",
+//           }
+//         : undefined
+//     );
 
-    if (result) {
-      console.log(`  ✓ Created escrow: ${result.escrow.id} (${amountXrp} XRP)`);
-    }
-  };
+//     if (result) {
+//       console.log(`  ✓ Created escrow: ${result.escrow.id} (${amountXrp} XRP)`);
+//     }
+//   };
 
-  // Add test escrows to each campaign
-  // Campaign 1: cityhall-001 (with real escrow create TX if available)
-  createTestEscrow("cityhall-001", 1, 1, escrowCreateTxHash);
-  createTestEscrow("cityhall-001", 1, 2);
-  createTestEscrow("cityhall-001", 1, 3);
+//   // Add test escrows to each campaign
+//   // Campaign 1: cityhall-001 (with real escrow create TX if available)
+//   createTestEscrow("cityhall-001", 1, 1, escrowCreateTxHash);
+//   createTestEscrow("cityhall-001", 1, 2);
+//   createTestEscrow("cityhall-001", 1, 3);
 
-  // Campaign 2: school-board-001
-  createTestEscrow("school-board-001", 1, 1);
-  createTestEscrow("school-board-001", 1, 2);
-  createTestEscrow("school-board-001", 1, 3);
+//   // Campaign 2: school-board-001
+//   createTestEscrow("school-board-001", 1, 1);
+//   createTestEscrow("school-board-001", 1, 2);
+//   createTestEscrow("school-board-001", 1, 3);
 
-  // Campaign 3: environmental-001
-  createTestEscrow("environmental-001", 1, 1);
-  createTestEscrow("environmental-001", 1, 2);
-  createTestEscrow("environmental-001", 1, 3);
+//   // Campaign 3: environmental-001
+//   createTestEscrow("environmental-001", 1, 1);
+//   createTestEscrow("environmental-001", 1, 2);
+//   createTestEscrow("environmental-001", 1, 3);
 
   console.log("");
   console.log("✓ Migration complete!");
