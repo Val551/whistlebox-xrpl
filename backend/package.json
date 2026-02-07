@@ -13,7 +13,9 @@
     "xrpl:step3": "tsx scripts/xrpl-escrow-create.ts",
     "xrpl:step3:test": "tsx scripts/xrpl-escrow-create.ts --assert",
     "xrpl:step4": "tsx scripts/xrpl-escrow-finish.ts",
-    "xrpl:step4:test": "tsx scripts/xrpl-escrow-finish.ts --assert"
+    "xrpl:step4:test": "tsx scripts/xrpl-escrow-finish.ts --assert",
+    "xrpl:acceptance:stub": "bash scripts/xrpl-acceptance-smoke.sh stub",
+    "xrpl:acceptance:real": "bash scripts/xrpl-acceptance-smoke.sh real"
   },
   "dependencies": {
     "better-sqlite3": "^11.7.0",

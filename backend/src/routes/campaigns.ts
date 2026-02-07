@@ -9,6 +9,7 @@ import {
   getCampaignSummary as getCampaignSummaryStub
 } from "../data/stubStore.js";
 import { conflict, notFound } from "../httpErrors.js";
+import { requireVerifierAuth } from "../verifierAuth.js";
 
 const router = Router();
 
@@ -27,7 +28,7 @@ router.get("/:id", (req, res) => {
 });
 
 // Verifier approval endpoint that releases an escrow in stub or DB mode.
-router.post("/:id/escrows/:escrowId/approve", (req, res) => {
+router.post("/:id/escrows/:escrowId/approve", requireVerifierAuth, (req, res) => {
   const { id, escrowId } = req.params;
   const result = STUB_MODE
     ? approveEscrowStub(id, escrowId)

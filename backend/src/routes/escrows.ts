@@ -12,6 +12,7 @@ import {
 } from "../data/dbStore.js";
 import { listEscrows as listEscrowsStub, releaseEscrow as releaseEscrowStub } from "../data/stubStore.js";
 import { conflict, notFound } from "../httpErrors.js";
+import { requireVerifierAuth } from "../verifierAuth.js";
 
 const router = Router();
 
@@ -35,7 +36,7 @@ router.get("/", (_req, res) => {
 });
 
 // Releases an escrow in stub mode and returns the updated escrow payload.
-router.post("/:id/release", async (req, res) => {
+router.post("/:id/release", requireVerifierAuth, async (req, res) => {
   const { id } = req.params;
   const incomingRequestId =
     typeof req.body?.requestId === "string" ? req.body.requestId.trim() : "";

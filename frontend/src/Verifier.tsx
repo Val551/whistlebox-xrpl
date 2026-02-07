@@ -18,10 +18,12 @@ type Escrow = {
   escrowCreateTx?: string;
   escrowFinishTx?: string | null;
   finishAfter?: string;
+  destinationAddress?: string;
 };
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3001";
 const CAMPAIGN_ID = import.meta.env.VITE_CAMPAIGN_ID ?? "cityhall-001";
+const VERIFIER_API_TOKEN = import.meta.env.VITE_VERIFIER_API_TOKEN ?? "";
 const XRPL_NETWORK = (import.meta.env.VITE_XRPL_NETWORK ?? "testnet").toLowerCase();
 const EXPLORER_BASE =
   import.meta.env.VITE_XRPL_EXPLORER_BASE ??
@@ -30,6 +32,7 @@ const EXPLORER_BASE =
     : "https://testnet.xrpl.org/transactions");
 const EXPLORER_LABEL = XRPL_NETWORK === "devnet" ? "Devnet" : "Testnet";
 const XRPL_TX_HASH_REGEX = /^[A-F0-9]{64}$/i;
+const XRPL_ENGINE_CODE_REGEX = /(tec[A-Z_]+|tem[A-Z_]+|tel[A-Z_]+|ter[A-Z_]+)/;
 
 const DEFAULT_PARTICLE_COUNT = 12;
 const DEFAULT_SPOTLIGHT_RADIUS = 400;
@@ -140,32 +143,77 @@ export default function Verifier() {
       setStatusType("error");
       return;
     }
+    if (!VERIFIER_API_TOKEN.trim()) {
+      setStatus("Missing verifier API token in frontend env (VITE_VERIFIER_API_TOKEN).");
+      setStatusType("error");
+      return;
+    }
     if (expectedVerifier && walletAddress.trim() !== expectedVerifier) {
       setStatus("Connected wallet does not match the verifier address on record.");
       setStatusType("error");
       return;
     }
+    const escrow = escrows.find((item) => item.id === escrowId);
+    if (escrow?.finishAfter) {
+      const finishAfterMs = Date.parse(escrow.finishAfter);
+      if (!Number.isNaN(finishAfterMs) && Date.now() < finishAfterMs) {
+        setStatus(
+          `Escrow cannot be released yet. Try again after ${new Date(
+            finishAfterMs
+          ).toLocaleString()} (engine: tecNO_PERMISSION)`
+        );
+        setStatusType("info");
+        return;
+      }
+    }
 
     setReleasingId(escrowId);
-    setStatus(null);
+    setStatus("Submitting EscrowFinish to XRPL and waiting for ledger validation...");
+    setStatusType("info");
     try {
       const res = await fetch(`${API_BASE}/api/escrows/${escrowId}/release`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-verifier-token": VERIFIER_API_TOKEN,
+          "x-actor-id": walletAddress.trim() || "verifier-ui"
+        },
         body: JSON.stringify({ requestId: `release:${escrowId}` })
       });
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || `Release failed (${res.status})`);
+        const baseMessage =
+          typeof body?.error === "string" ? body.error : `Release failed (${res.status})`;
+        const engineResult =
+          typeof body?.engineResult === "string"
+            ? body.engineResult
+            : typeof body?.details?.engineResult === "string"
+              ? body.details.engineResult
+              : undefined;
+        throw new Error(engineResult ? `${baseMessage} (engine: ${engineResult})` : baseMessage);
       }
 
       setStatus(`Escrow ${escrowId} released successfully.`);
       setStatusType("success");
       await fetchEscrows();
     } catch (err) {
-      setStatus(err instanceof Error ? err.message : "Release failed");
-      setStatusType("error");
+      const message = err instanceof Error ? err.message : "Release failed";
+      const engineCode = message.match(XRPL_ENGINE_CODE_REGEX)?.[0];
+      if (engineCode === "tecNO_PERMISSION") {
+        setStatus(
+          "Escrow cannot be released yet because the finish time has not been reached (engine: tecNO_PERMISSION)"
+        );
+        setStatusType("info");
+      } else if (engineCode === "tecNO_TARGET") {
+        setStatus(
+          "Escrow target was not found or is already finished (engine: tecNO_TARGET)"
+        );
+        setStatusType("error");
+      } else {
+        setStatus(message);
+        setStatusType("error");
+      }
     } finally {
       setReleasingId(null);
     }
@@ -421,6 +469,9 @@ export default function Verifier() {
                       </div>
                     </div>
                     <div className="escrow-meta">
+                      {escrow.destinationAddress && (
+                        <div className="address-line">{escrow.destinationAddress}</div>
+                      )}
                       {escrow.escrowFinishTx && (
                         <ExplorerLink txHash={escrow.escrowFinishTx} label="Release Tx" />
                       )}

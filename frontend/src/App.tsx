@@ -26,6 +26,7 @@ type Escrow = {
   status: string;
   escrowCreateTx?: string;
   escrowFinishTx?: string | null;
+  destinationAddress?: string;
 };
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3001";
@@ -39,6 +40,7 @@ const EXPLORER_BASE =
 const EXPLORER_LABEL = XRPL_NETWORK === "devnet" ? "Devnet" : "Testnet";
 const MAX_DONATION_XRP = Number(import.meta.env.VITE_MAX_DONATION_XRP ?? 1000);
 const XRPL_TX_HASH_REGEX = /^[A-F0-9]{64}$/i;
+const XRPL_ENGINE_CODE_REGEX = /(tec[A-Z_]+|tem[A-Z_]+|tel[A-Z_]+|ter[A-Z_]+)/;
 
 // MagicBento configuration
 const DEFAULT_PARTICLE_COUNT = 12;
@@ -169,6 +171,18 @@ export default function App() {
     () => (releasedEscrows.length ? releasedEscrows[releasedEscrows.length - 1] : null),
     [releasedEscrows]
   );
+  const latestReleasedWithProof = useMemo(
+    () =>
+      [...releasedEscrows]
+        .reverse()
+        .find(
+          (escrow) =>
+            Boolean(escrow.destinationAddress) &&
+            Boolean(escrow.escrowFinishTx) &&
+            XRPL_TX_HASH_REGEX.test(String(escrow.escrowFinishTx).trim())
+        ) ?? null,
+    [releasedEscrows]
+  );
   const lifecycleStatus =
     latestReleased?.status === "released"
       ? "released"
@@ -208,6 +222,8 @@ export default function App() {
     setLoading(true);
     setStatus(null);
     setWalletStatus(null);
+    setStatusType("info");
+    setStatus("Submitting EscrowCreate to XRPL and waiting for ledger validation...");
     const amount = Number(amountXrp);
     if (!Number.isFinite(amount) || amount <= 0) {
       setStatus("Enter a valid XRP amount greater than 0.");
@@ -242,6 +258,12 @@ export default function App() {
       if (res.status === 409) {
         const conflictMessage =
           typeof data?.error === "string" ? data.error : "Donation conflict";
+        const engineResult =
+          typeof data?.engineResult === "string"
+            ? data.engineResult
+            : typeof data?.details?.engineResult === "string"
+              ? data.details.engineResult
+              : undefined;
         const existingEscrowId =
           typeof data?.escrowId === "string"
             ? data.escrowId
@@ -260,11 +282,23 @@ export default function App() {
           return;
         }
 
-        throw new Error(conflictMessage);
+        if (engineResult === "tecUNFUNDED") {
+          throw new Error("Insufficient custody funds to create escrow (engine: tecUNFUNDED)");
+        }
+        throw new Error(
+          engineResult ? `${conflictMessage} (engine: ${engineResult})` : conflictMessage
+        );
       }
 
       if (!res.ok) {
-        throw new Error(data.error ?? "Donation failed");
+        const engineResult =
+          typeof data?.engineResult === "string"
+            ? data.engineResult
+            : typeof data?.details?.engineResult === "string"
+              ? data.details.engineResult
+              : undefined;
+        const errorMessage = typeof data?.error === "string" ? data.error : "Donation failed";
+        throw new Error(engineResult ? `${errorMessage} (engine: ${engineResult})` : errorMessage);
       }
 
       setStatus(`Funds locked. Escrow created: ${data.escrowId}`);
@@ -284,7 +318,13 @@ export default function App() {
       const campaignData = await campaignRes.json();
       setCampaign(campaignData);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Donation failed");
+      const message = error instanceof Error ? error.message : "Donation failed";
+      const engineCode = message.match(XRPL_ENGINE_CODE_REGEX)?.[0];
+      if (engineCode) {
+        setStatus(`${message}`);
+      } else {
+        setStatus(message);
+      }
       setStatusType("error");
     } finally {
       setLoading(false);
@@ -539,7 +579,7 @@ export default function App() {
                     onChange={(event) => setAmountXrp(event.target.value)}
                   />
                   <button onClick={donate} disabled={loading}>
-                    Create Escrow
+                    {loading ? "Submitting..." : "Create Escrow"}
                   </button>
                 </div>
                 <div className="row" style={{ marginTop: "8px" }}>
@@ -762,9 +802,46 @@ export default function App() {
               <div className="magic-bento-card__header">
                 <div className="magic-bento-card__label">Transparency</div>
               </div>
+<<<<<<< HEAD
               <div className="magic-bento-card__content">
                 <h2 className="magic-bento-card__title">{lockedEscrows.length}</h2>
                 <p className="magic-bento-card__description">Active Escrows</p>
+=======
+              <div className="magic-bento-card__content" style={{ gap: "12px" }}>
+                {latestReleased ? (
+                  <>
+                    <h2 className="magic-bento-card__title">
+                      {latestReleased.amountXrp} XRP Released
+                    </h2>
+                    <div className="magic-bento-card__description">
+                      Funds delivered to journalist wallet
+                    </div>
+                    <div className="address-line">
+                      {latestReleasedWithProof?.destinationAddress ??
+                        latestReleased.destinationAddress ??
+                        campaign?.journalistAddress ??
+                        "-"}
+                    </div>
+                    {latestReleasedWithProof?.escrowFinishTx ? (
+                      <ExplorerLink
+                        txHash={latestReleasedWithProof.escrowFinishTx}
+                        label="Release Tx"
+                      />
+                    ) : (
+                      <div className="escrow-note">
+                        Release proof unavailable for this record.
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <h2 className="magic-bento-card__title">No Releases Yet</h2>
+                    <div className="magic-bento-card__description">
+                      Funds release after verifier approval.
+                    </div>
+                  </>
+                )}
+>>>>>>> 9bfd0daace22dee656186b4764b114c2e900a105
               </div>
             </ParticleCard>
             {/* Card 7: Key Addresses */}
