@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { Client, Wallet, isValidClassicAddress } from "xrpl";
+import { Client, Wallet, isValidClassicAddress, RippledError } from "xrpl";
 
 type RoleName = "custody" | "journalist" | "verifier";
 
@@ -32,8 +32,13 @@ function inferFaucetUrl(wss: string): string {
 async function getBalance(client: Client, address: string): Promise<number> {
   try {
     return await client.getXrpBalance(address);
-  } catch {
-    return 0;
+  } catch (error) {
+    // Account not found is expected for new wallets (balance = 0)
+    if (error instanceof RippledError && (error.data as any)?.error === "actNotFound") {
+      return 0;
+    }
+    // Re-throw unexpected errors (network failures, rate limiting, etc.)
+    throw error;
   }
 }
 
