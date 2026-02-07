@@ -367,8 +367,6 @@ export const approveEscrow = (campaignId: string, escrowId: string) => {
   return releaseEscrow(escrowId);
 };
 
-<<<<<<< HEAD
-=======
 // Checks if a verifier address is whitelisted for a campaign.
 export const isVerifierWhitelisted = (address: string, campaignId: string): boolean => {
   const db = getDb();
@@ -405,4 +403,3 @@ export const removeVerifierFromWhitelist = (address: string, campaignId: string)
     .run(campaignId, address);
   return result.changes > 0;
 };
->>>>>>> a3140bd21665a34bc351e134316dfa3d5dc6efe0
