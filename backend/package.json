@@ -1,0 +1,31 @@
+{
+  "name": "whistlebox-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "xrpl:step1": "tsx scripts/xrpl-wallet-bootstrap.ts",
+    "xrpl:step2": "tsx scripts/xrpl-websocket-smoke.ts",
+    "xrpl:step2:test": "tsx scripts/xrpl-websocket-smoke.ts --assert",
+    "xrpl:step3": "tsx scripts/xrpl-escrow-create.ts",
+    "xrpl:step3:test": "tsx scripts/xrpl-escrow-create.ts --assert"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.7.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "xrpl": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.14.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}
